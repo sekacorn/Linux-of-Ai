@@ -1,0 +1,436 @@
+# Linux of AI
+
+<p align="center">
+  <strong>Free, open, portable AI infrastructure for everyone.</strong>
+</p>
+
+<p align="center">
+  Build AI systems that are inspectable, governed, measurable, replaceable, and not trapped inside a single vendor.
+</p>
+
+<p align="center">
+  <a href="#the-mission">Mission</a> •
+  <a href="#the-problem">The Problem</a> •
+  <a href="#the-seven-projects">Projects</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#principles">Principles</a> •
+  <a href="#get-started">Get Started</a>
+</p>
+
+---
+
+## The Mission
+
+**Linux of AI** is a seven-project open-source ecosystem created to reduce vendor lock-in and make practical AI infrastructure available to everyone.
+
+The goal is simple:
+
+> **No organization should be forced to surrender control of its AI systems, data, costs, policies, or future to a single vendor.**
+
+AI is becoming critical infrastructure. But many organizations are discovering that the systems they built are difficult to move, difficult to inspect, difficult to govern, and increasingly expensive to operate.
+
+This ecosystem exists to provide another path.
+
+A path where AI infrastructure is:
+
+- **Portable** across models, providers, and environments
+- **Inspectable** instead of hidden behind opaque services
+- **Governed** through explicit policies
+- **Measurable** in cost, usage, efficiency, and outcomes
+- **Replaceable** when a model or provider no longer serves the user
+- **Local-first** where privacy or control matters
+- **Free and open source** for public benefit
+
+This software is intended to remain available to developers, researchers, nonprofits, businesses, governments, students, and communities without placing the core infrastructure behind a paywall.
+
+---
+
+## The Problem
+
+Organizations adopting AI repeatedly encounter the same pain points.
+
+### Vendor lock-in
+
+Applications become tightly coupled to one model provider, SDK, API format, pricing model, or hosted platform. Replacing the provider later can require major rewrites.
+
+### Unpredictable token costs
+
+A prototype may be affordable, but production usage can grow rapidly. Teams often lack clear controls for routing, budgeting, measuring cost, and comparing alternatives.
+
+### No practical replacement path
+
+Organizations may know they are overpaying or underperforming, but they lack a repeatable way to test another model without disrupting the application.
+
+### Weak governance
+
+AI agents can call tools, access data, and make decisions without clear, portable rules governing what they are allowed to do.
+
+### Limited operational evidence
+
+Logs are often inconsistent, provider-specific, incomplete, or difficult to verify after the fact.
+
+### Fragmented measurement
+
+API success does not necessarily mean business success. Many systems track requests and tokens but not whether the AI produced an acceptable outcome.
+
+### Loss of organizational meaning
+
+Business concepts, relationships, permissions, and actions are frequently embedded directly inside application code, making systems difficult to understand and migrate.
+
+### Privacy and deployment constraints
+
+Some organizations cannot send sensitive data to external providers. They need local or controlled deployment options that do not require rebuilding the entire stack.
+
+Linux of AI addresses these problems as one connected ecosystem.
+
+---
+
+## The Seven Projects
+
+| Layer | Project | What it solves | Repository | PyPI |
+|---|---|---|---|---|
+| Organizational meaning | **OpenOntologyLite** | Defines portable entities, relationships, actions, permissions, and business meaning outside application code | [GitHub](https://github.com/sekacorn/OpenOntologyLite) | [PyPI](https://pypi.org/project/openontologylite/) |
+| Governance | **AgentPolicyPack** | Provides portable policy-as-code for governing AI agents and agentic workflows | [GitHub](https://github.com/sekacorn/AgentPolicyPack) | [PyPI](https://pypi.org/project/agentpolicypack/) |
+| Orchestration | **AgentForge** | Coordinates multi-agent systems with model routing, budgets, governance, memory, and observability | [GitHub](https://github.com/sekacorn/AgentForge) | [PyPI](https://pypi.org/project/agentforge-oss/) |
+| Private deployment | **PrivateAIStack** | Provides a local-first starting point for private AI, local models, RAG, code review, auditing, and controlled deployment | [GitHub](https://github.com/sekacorn/PrivateAIStack) | [PyPI](https://pypi.org/project/privateaistack/) |
+| Model replacement | **ModelSwapBench** | Tests whether another model can deliver an acceptable outcome at lower cost, latency, or operational risk | [GitHub](https://github.com/sekacorn/ModelSwapBench) | [PyPI](https://pypi.org/project/modelswapbench/) |
+| Operational evidence | **AIAuditLog** | Defines a portable, tamper-evident audit-event format and local toolkit for AI systems and agents | [GitHub](https://github.com/sekacorn/AIAuditLog) | [PyPI](https://pypi.org/project/aiauditlog/) |
+| Cost and outcomes | **OpenAIMeter** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/OpenAIMeter) | [PyPI](https://pypi.org/project/openaimeter/) |
+
+---
+
+## Architecture
+
+```text
+OpenOntologyLite
+        │
+        ▼
+Portable organizational meaning
+        │
+        ▼
+AgentPolicyPack
+        │
+        ▼
+Portable governance rules
+        │
+        ▼
+AgentForge
+        │
+        ▼
+Portable agent orchestration
+        │
+        ▼
+PrivateAIStack
+        │
+        ▼
+Private and controlled deployment
+        │
+        ▼
+ModelSwapBench
+        │
+        ▼
+Model replacement and economics verification
+        │
+        ▼
+AIAuditLog
+        │
+        ▼
+Portable tamper-evident operational evidence
+        │
+        ▼
+OpenAIMeter
+        │
+        ▼
+Usage, cost, efficiency, and outcome measurement
+```
+
+Each project can be used independently. Together, they form a portable foundation for building AI systems without making one provider the permanent center of the architecture.
+
+---
+
+## How Each Project Helps
+
+### OpenOntologyLite
+
+**Pain point:** Organizational knowledge is buried inside source code, database schemas, prompts, and vendor-specific platforms.
+
+**What it provides:**
+
+- Portable ontology definitions in YAML or JSON
+- Typed entities, properties, relationships, and actions
+- Permissions and preconditions
+- Validation and canonical representation
+- Diffing, inspection, documentation, and diagram export
+- Local-first and offline operation
+
+**Why it matters:**  
+Your organization’s meaning should belong to your organization, not to a proprietary platform.
+
+---
+
+### AgentPolicyPack
+
+**Pain point:** Agent behavior is often governed by scattered prompt instructions and application-specific checks.
+
+**What it provides:**
+
+- Portable policy-as-code
+- Explicit rules for agent actions
+- Reusable governance across systems
+- A foundation for reviewable and testable agent behavior
+
+**Why it matters:**  
+Governance should be visible, portable, and separate from the model itself.
+
+---
+
+### AgentForge
+
+**Pain point:** Multi-agent systems become tightly coupled to one provider, one orchestration framework, or one pricing model.
+
+**What it provides:**
+
+- Multi-agent orchestration
+- Supervisor and worker patterns
+- Model routing
+- Budget controls
+- Role-based access control
+- Policy integration
+- Memory options
+- Audit logging
+- Observability support
+- Multiple provider paths
+
+**Why it matters:**  
+The orchestration layer should make models replaceable rather than make lock-in stronger.
+
+---
+
+### PrivateAIStack
+
+**Pain point:** Many organizations need AI capabilities but cannot send all data to external services.
+
+**What it provides:**
+
+- Local-first AI deployment
+- Ollama-backed local models
+- FastAPI-based services
+- PostgreSQL and pgvector support
+- Local retrieval-augmented generation
+- Governed code review
+- Audit events
+- Optional observability
+
+**Why it matters:**  
+Privacy, local control, and portability should be practical options, not enterprise luxuries.
+
+---
+
+### ModelSwapBench
+
+**Pain point:** Teams cannot easily prove whether another model is good enough to replace their current provider.
+
+**What it provides:**
+
+- Repeatable model comparison
+- Outcome-based evaluation
+- Cost and latency comparison
+- Provider replacement testing
+- Evidence for model-routing and migration decisions
+
+**Why it matters:**  
+A model should earn its place through measured performance, not remain because switching feels too difficult.
+
+---
+
+### AIAuditLog
+
+**Pain point:** AI logs are inconsistent, incomplete, and often locked into provider-specific systems.
+
+**What it provides:**
+
+- A portable audit-event format
+- Local audit tooling
+- Hash chaining for tamper evidence
+- Consistent operational evidence across AI systems
+
+**Important boundaries:**
+
+- Tamper-evident does not mean immutable
+- A signature does not prove real-world identity by itself
+- Audit logs do not automatically create legal non-repudiation
+- Using the format does not automatically create regulatory compliance
+
+**Why it matters:**  
+Organizations need evidence they can retain, inspect, export, and understand independently of a vendor.
+
+---
+
+### OpenAIMeter
+
+**Pain point:** Token counts and API bills do not explain whether an AI system is efficient or useful.
+
+**What it provides:**
+
+- Usage measurement
+- Cost calculation using precise decimal arithmetic
+- Efficiency analysis
+- Outcome tracking
+- Budget evaluation
+- Provider and model comparison
+
+**Important boundaries:**
+
+- Missing pricing is never treated as zero
+- Calculated cost is not invoice-confirmed cost
+- Projected savings are not realized savings
+- API success is not automatically business success
+- Budgets are evaluated, not automatically enforced
+
+**Why it matters:**  
+AI economics should be measured in terms of cost and acceptable outcomes, not tokens alone.
+
+---
+
+## Principles
+
+### Free at the core
+
+The core software is free and open source under the MIT License.
+
+### No forced vendor dependency
+
+The ecosystem is designed to keep models, providers, and deployment environments replaceable.
+
+### Honest claims
+
+The projects should not claim tests, integrations, security guarantees, compliance, publication status, or verification unless those claims were actually demonstrated.
+
+### Local control matters
+
+Organizations should be able to run critical parts of their AI infrastructure locally or inside environments they control.
+
+### Measurement before loyalty
+
+Models and providers should be selected based on measured outcomes, cost, latency, privacy, and operational needs.
+
+### Governance should travel with the system
+
+Policies, organizational meaning, audit evidence, and measurements should remain portable when the model or provider changes.
+
+### Open infrastructure is a public good
+
+AI infrastructure should not be available only to the largest companies. Smaller organizations, public institutions, researchers, and independent developers should have access to practical alternatives.
+
+---
+
+## Who This Is For
+
+Linux of AI is intended for:
+
+- Developers building AI applications
+- Teams trying to reduce model-provider dependency
+- Organizations facing rising token costs
+- Businesses evaluating local or private AI
+- Researchers who need inspectable infrastructure
+- Nonprofits and public-interest organizations
+- Governments and regulated environments
+- Platform teams building internal AI capabilities
+- Anyone who believes critical AI infrastructure should remain open
+
+---
+
+## Get Started
+
+Install individual projects from PyPI:
+
+```bash
+pip install agentforge-oss
+pip install privateaistack
+pip install modelswapbench
+pip install openontologylite
+pip install agentpolicypack
+pip install aiauditlog
+pip install openaimeter
+```
+
+Supported Python versions:
+
+```text
+Python 3.11–3.13
+```
+
+Visit each repository for project-specific installation instructions, examples, limitations, and documentation.
+
+---
+
+## Project Links
+
+- [AgentForge](https://github.com/sekacorn/AgentForge)
+- [PrivateAIStack](https://github.com/sekacorn/PrivateAIStack)
+- [ModelSwapBench](https://github.com/sekacorn/ModelSwapBench)
+- [OpenOntologyLite](https://github.com/sekacorn/OpenOntologyLite)
+- [AgentPolicyPack](https://github.com/sekacorn/AgentPolicyPack)
+- [AIAuditLog](https://github.com/sekacorn/AIAuditLog)
+- [OpenAIMeter](https://github.com/sekacorn/OpenAIMeter)
+
+GitHub organization and public work:
+
+- [github.com/sekacorn](https://github.com/sekacorn)
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+Useful contributions include:
+
+- Documentation improvements
+- Bug reports with reproducible examples
+- Tests across Python 3.11–3.13
+- Provider adapters
+- Model-evaluation scenarios
+- Policy examples
+- Ontology examples
+- Audit-event integrations
+- Cost and outcome measurement adapters
+- Accessibility improvements
+- Security reviews
+- Packaging and release improvements
+
+Please read the contribution guidance in the individual project repository before submitting changes.
+
+---
+
+## Sustainability
+
+Free software still requires maintenance.
+
+The long-term goal is to keep the core ecosystem free while supporting sustainability through methods such as:
+
+- Community contributions
+- Sponsorships
+- Grants
+- Research partnerships
+- Public-interest funding
+- Optional implementation support
+- Optional training and consulting
+
+The mission is not to place the core infrastructure behind a paywall. The mission is to keep it useful, maintained, and available.
+
+---
+
+## License
+
+All projects in the Linux of AI ecosystem are intended to use the **MIT License**, unless a repository explicitly states otherwise.
+
+---
+
+## Final Statement
+
+> AI should expand human capability without forcing humanity into permanent dependence on a small number of vendors.
+
+Linux of AI exists so that organizations can understand their systems, control their costs, govern their agents, preserve their knowledge, replace their models, retain their evidence, and measure whether AI is actually helping.
+
+**Free infrastructure. Portable systems. Human control.**
