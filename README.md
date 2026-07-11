@@ -95,7 +95,7 @@ Linux of AI addresses these problems as one connected ecosystem.
 | Private deployment | **PrivateAIStack** | Provides a local-first starting point for private AI, local models, RAG, code review, auditing, and controlled deployment | [GitHub](https://github.com/sekacorn/PrivateAIStack) | [PyPI](https://pypi.org/project/privateaistack/) |
 | Model replacement | **ModelSwapBench** | Tests whether another model can deliver an acceptable outcome at lower cost, latency, or operational risk | [GitHub](https://github.com/sekacorn/ModelSwapBench) | [PyPI](https://pypi.org/project/modelswapbench/) |
 | Operational evidence | **AIAuditLog** | Defines a portable, tamper-evident audit-event format and local toolkit for AI systems and agents | [GitHub](https://github.com/sekacorn/AIAuditLog) | [PyPI](https://pypi.org/project/aiauditlog/) |
-| Cost and outcomes | **OpenAIMeter** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/OpenAIMeter) | [PyPI](https://pypi.org/project/openaimeter/) |
+| Cost and outcomes | **AIMeter** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/AIMeter) | [PyPI](https://pypi.org/project/aimeter-oss/) |
 
 ---
 
@@ -138,7 +138,7 @@ AIAuditLog
 Portable tamper-evident operational evidence
         │
         ▼
-OpenAIMeter
+AIMeter
         │
         ▼
 Usage, cost, efficiency, and outcome measurement
@@ -266,7 +266,7 @@ Organizations need evidence they can retain, inspect, export, and understand ind
 
 ---
 
-### OpenAIMeter
+### AIMeter
 
 **Pain point:** Token counts and API bills do not explain whether an AI system is efficient or useful.
 
@@ -351,7 +351,7 @@ pip install modelswapbench
 pip install openontologylite
 pip install agentpolicypack
 pip install aiauditlog
-pip install openaimeter
+pip install aimeter-oss
 ```
 
 Supported Python versions:
@@ -372,7 +372,7 @@ Visit each repository for project-specific installation instructions, examples, 
 - [OpenOntologyLite](https://github.com/sekacorn/OpenOntologyLite)
 - [AgentPolicyPack](https://github.com/sekacorn/AgentPolicyPack)
 - [AIAuditLog](https://github.com/sekacorn/AIAuditLog)
-- [OpenAIMeter](https://github.com/sekacorn/OpenAIMeter)
+- [AIMeter](https://github.com/sekacorn/AIMeter)
 
 GitHub organization and public work:
 
