@@ -1,0 +1,12 @@
+{
+  "label": "deterministic example data",
+  "provider": "local-example",
+  "model": "local-small-model",
+  "workflow": "customer_support_internal_drafting",
+  "quality_score": "0.83",
+  "average_latency_seconds": "1.55",
+  "estimated_cost_usd": "1.10",
+  "currency": "USD",
+  "ticket_count": 7,
+  "notes": "Fixture data only. No local model was executed."
+}

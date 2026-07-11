@@ -17,6 +17,53 @@
   <a href="#get-started">Get Started</a>
 </p>
 
+## Start Here
+
+New to Linux of AI? Start with the [Start Here guide](docs/start-here.md) to choose the right tool for your problem.
+
+You can also inspect the [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) to see the ecosystem pattern in one deterministic, offline-first example.
+
+## Flagship Demo
+
+The [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) shows how the ecosystem can help a team evaluate replacing an expensive or locked-in AI model using portable ontology, policy, benchmarking, audit evidence, and cost/outcome measurement.
+
+This demo is deterministic and offline-first. It demonstrates the integration pattern using portable files and reports.
+
+## Project Status
+
+| Project | PyPI package | Role | Status |
+|---|---|---|---|
+| AgentForge | agentforge-oss | Agent orchestration | Published |
+| PrivateAIStack | privateaistack | Private/local deployment | Published |
+| ModelSwapBench | modelswapbench | Model replacement and vendor-exit reports | Published; includes AI Vendor Exit Report |
+| OpenOntologyLite | openontologylite | Portable ontology and business meaning | Published |
+| AgentPolicyPack | agentpolicypack | Policy-as-code for agents | Published |
+| AIAuditLog | aiauditlog | AI audit evidence | Published |
+| AIMeter OSS | aimeter-oss | AI cost, usage, efficiency, and outcome measurement | Published |
+
+## What This Is Not
+
+Linux of AI is not:
+
+- a foundation model;
+- a hosted AI provider;
+- a compliance certification;
+- a legal guarantee;
+- a replacement for human review in high-risk workflows;
+- proof that any model migration is automatically safe.
+
+It is open infrastructure for building, evaluating, governing, auditing, and measuring AI systems.
+
+## Best First Path
+
+If you are new, start here:
+
+1. Read [docs/start-here.md](docs/start-here.md)
+2. Run or inspect [examples/vendor-exit-demo/](examples/vendor-exit-demo/)
+3. Try ModelSwapBench for model replacement decisions
+4. Try AIMeter OSS for cost and outcome measurement
+5. Add governance with AgentPolicyPack and audit evidence with AIAuditLog
+
 ---
 
 ## The Mission
@@ -95,7 +142,7 @@ Linux of AI addresses these problems as one connected ecosystem.
 | Private deployment | **PrivateAIStack** | Provides a local-first starting point for private AI, local models, RAG, code review, auditing, and controlled deployment | [GitHub](https://github.com/sekacorn/PrivateAIStack) | [PyPI](https://pypi.org/project/privateaistack/) |
 | Model replacement | **ModelSwapBench** | Tests whether another model can deliver an acceptable outcome at lower cost, latency, or operational risk | [GitHub](https://github.com/sekacorn/ModelSwapBench) | [PyPI](https://pypi.org/project/modelswapbench/) |
 | Operational evidence | **AIAuditLog** | Defines a portable, tamper-evident audit-event format and local toolkit for AI systems and agents | [GitHub](https://github.com/sekacorn/AIAuditLog) | [PyPI](https://pypi.org/project/aiauditlog/) |
-| Cost and outcomes | **AIMeter** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/AIMeter) | [PyPI](https://pypi.org/project/aimeter-oss/) |
+| Cost and outcomes | **AIMeter OSS** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/AIMeter) | [PyPI](https://pypi.org/project/aimeter-oss/) |
 
 ---
 
@@ -138,7 +185,7 @@ AIAuditLog
 Portable tamper-evident operational evidence
         │
         ▼
-AIMeter
+AIMeter OSS
         │
         ▼
 Usage, cost, efficiency, and outcome measurement
@@ -266,7 +313,7 @@ Organizations need evidence they can retain, inspect, export, and understand ind
 
 ---
 
-### AIMeter
+### AIMeter OSS
 
 **Pain point:** Token counts and API bills do not explain whether an AI system is efficient or useful.
 
@@ -372,7 +419,7 @@ Visit each repository for project-specific installation instructions, examples, 
 - [OpenOntologyLite](https://github.com/sekacorn/OpenOntologyLite)
 - [AgentPolicyPack](https://github.com/sekacorn/AgentPolicyPack)
 - [AIAuditLog](https://github.com/sekacorn/AIAuditLog)
-- [AIMeter](https://github.com/sekacorn/AIMeter)
+- [AIMeter OSS](https://github.com/sekacorn/AIMeter)
 
 GitHub organization and public work:
 

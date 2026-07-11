@@ -1,0 +1,24 @@
+{
+  "label": "deterministic example data",
+  "baseline": {
+    "provider": "hosted-example",
+    "model": "premium-model",
+    "quality_score": "0.92",
+    "average_latency_seconds": "1.20",
+    "estimated_cost_usd": "12.50"
+  },
+  "candidate": {
+    "provider": "local-example",
+    "model": "local-small-model",
+    "quality_score": "0.83",
+    "average_latency_seconds": "1.55",
+    "estimated_cost_usd": "1.10"
+  },
+  "estimated_cost_reduction_percent": "91.20",
+  "quality_retained_percent": "90.22",
+  "latency_change_percent": "29.17",
+  "decision": "Candidate acceptable with human review",
+  "recommended_use": "low-risk internal support workflows",
+  "excluded_use": "high-risk legal, medical, financial, security-sensitive, or external-facing use without additional evaluation",
+  "notes": "This file represents ModelSwapBench-style output for an offline integration-pattern demo."
+}

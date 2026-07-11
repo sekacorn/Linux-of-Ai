@@ -1,0 +1,61 @@
+name: support_vendor_exit_policy
+version: "0.1.0"
+description: >
+  AgentPolicyPack-style governance rules for evaluating whether a candidate
+  model may support fictional customer-support workflows.
+
+defaults:
+  candidate_model_allowed: false
+  require_audit_event: true
+  require_human_review: true
+
+rules:
+  - id: low_risk_internal_candidate_allowed
+    description: Low-risk internal tickets may use candidate model drafts.
+    when:
+      risk_level: low
+      channel: internal
+    decision:
+      candidate_model_allowed: true
+      require_human_review: true
+      allowed_use: low-risk internal support workflow
+
+  - id: medium_risk_internal_review_required
+    description: Medium-risk internal tickets may be drafted only with stronger review.
+    when:
+      risk_level: medium
+      channel: internal
+    decision:
+      candidate_model_allowed: true
+      require_human_review: true
+      require_policy_owner_review: true
+
+  - id: high_risk_requires_escalation
+    description: High-risk tickets require escalation before model output is used.
+    when:
+      risk_level: high
+    decision:
+      candidate_model_allowed: false
+      require_human_review: true
+      require_escalation: true
+
+  - id: regulated_advice_requires_escalation
+    description: Legal, medical, or financial questions require escalation.
+    when:
+      category: legal_medical_financial
+    decision:
+      candidate_model_allowed: false
+      require_escalation: true
+
+  - id: external_response_requires_stronger_review
+    description: External responses require stronger review before publication.
+    when:
+      channel: external
+    decision:
+      candidate_model_allowed: false
+      require_human_review: true
+      require_policy_owner_review: true
+
+boundaries:
+  - Policies are demo fixtures and do not automatically enforce production behavior.
+  - Passing this policy does not prove legal, regulatory, safety, or security compliance.

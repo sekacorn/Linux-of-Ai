@@ -1,0 +1,62 @@
+name: support_vendor_exit_ontology
+version: "0.1.0"
+description: >
+  Portable business meaning for a fictional customer-support vendor exit demo.
+  This file is OpenOntologyLite-style example data and is intended to be
+  inspectable without a hosted AI provider.
+
+entities:
+  Customer:
+    description: Fictional customer or internal requester.
+    properties:
+      customer_id: string
+      segment: string
+  SupportTicket:
+    description: Request for help, guidance, or review.
+    properties:
+      ticket_id: string
+      category: string
+      risk_level: RiskLevel
+      channel: string
+      summary: string
+  RiskLevel:
+    description: Governance risk classification for model use.
+    allowed_values:
+      - low
+      - medium
+      - high
+  Response:
+    description: Draft support response or internal guidance.
+    properties:
+      response_id: string
+      ticket_id: string
+      intended_audience: string
+      requires_human_review: boolean
+  Escalation:
+    description: Required review by a human owner or specialist.
+    properties:
+      escalation_type: string
+      reason: string
+      required_owner: string
+
+relationships:
+  - name: ticket_has_response
+    from: SupportTicket
+    to: Response
+  - name: ticket_may_require_escalation
+    from: SupportTicket
+    to: Escalation
+  - name: response_is_governed_by_risk
+    from: Response
+    to: RiskLevel
+
+actions:
+  DraftInternalResponse:
+    description: Produce a non-public support draft for human review.
+    allowed_risk_levels:
+      - low
+      - medium
+  EscalateHighRiskTicket:
+    description: Route high-risk tickets to a human owner before use.
+    required_for:
+      - high

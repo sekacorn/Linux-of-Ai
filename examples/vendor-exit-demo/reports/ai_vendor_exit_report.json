@@ -1,0 +1,47 @@
+{
+  "demo": "Linux of AI Vendor Exit Demo",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "offline_first": true,
+  "deterministic": true,
+  "scenario": "A fictional company evaluates whether a lower-cost local/open model can replace an expensive hosted model for low-risk internal customer-support drafting.",
+  "comparison": {
+    "label": "deterministic example data",
+    "baseline": {
+      "provider": "hosted-example",
+      "model": "premium-model",
+      "quality_score": "0.92",
+      "average_latency_seconds": "1.20",
+      "estimated_cost_usd": "12.50"
+    },
+    "candidate": {
+      "provider": "local-example",
+      "model": "local-small-model",
+      "quality_score": "0.83",
+      "average_latency_seconds": "1.55",
+      "estimated_cost_usd": "1.10"
+    },
+    "estimated_cost_reduction_percent": "91.20",
+    "quality_retained_percent": "90.22",
+    "latency_change_percent": "29.17",
+    "decision": "Candidate acceptable with human review",
+    "recommended_use": "low-risk internal support workflows",
+    "excluded_use": "high-risk legal, medical, financial, security-sensitive, or external-facing use without additional evaluation",
+    "notes": "This file represents ModelSwapBench-style output for an offline integration-pattern demo."
+  },
+  "risk_counts": {
+    "low": 1,
+    "medium": 3,
+    "high": 3
+  },
+  "escalation_categories": [
+    "angry_customer",
+    "legal_medical_financial",
+    "security_concern"
+  ],
+  "conclusion": {
+    "decision": "Candidate acceptable with human review",
+    "recommended_use": "low-risk internal support workflows",
+    "do_not_use_for": "high-risk legal, medical, financial, security-sensitive, or external-facing use without additional evaluation",
+    "compliance_boundary": "Do not use as proof of legal, regulatory, safety, or security compliance."
+  }
+}
