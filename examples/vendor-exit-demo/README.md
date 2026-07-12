@@ -6,6 +6,15 @@ This is a deterministic, offline-first integration-pattern demo for the Linux of
 
 The demo walks through a fictional customer-support workflow where a company compares an expensive hosted model against a lower-cost local/open candidate model. It shows how ontology, policy, benchmark output, audit evidence, and cost/outcome measurement can support a practical vendor-exit decision.
 
+This demo uses the same portable export pattern supported by ModelSwapBench's
+AI Vendor Exit Report:
+
+- AIMeter OSS-style export for cost/outcome measurement.
+- AIAuditLog-style export for audit evidence.
+
+The pattern is deterministic, offline-first, and file-based. It does not claim
+deep runtime integration across the packages.
+
 ## Why vendor exit matters
 
 Vendor exit matters because AI systems often become coupled to one provider's API, pricing, model behavior, logging, and governance assumptions. A team needs a repeatable way to ask whether a replacement model is good enough for a specific workflow, what risks remain, what evidence was recorded, and what costs are estimated to change.
@@ -40,7 +49,9 @@ The conclusion in this fixture is intentionally narrow: the candidate is accepta
 | `policies/support_agent_policy.yaml` | AgentPolicyPack-style governance rules. |
 | `reports/ai_vendor_exit_report.md` | Human-readable AI Vendor Exit Report. |
 | `reports/ai_vendor_exit_report.json` | Machine-readable report. |
+| `reports/aimeter_summary.json` | AIMeter OSS-style portable cost/outcome export. |
 | `reports/cost_outcome_summary.md` | AIMeter OSS-style cost and outcome summary. |
+| `audit/audit_events.jsonl` | AIAuditLog-style portable audit-event export with hash chaining. |
 | `audit/ai_audit_events.jsonl` | AIAuditLog-style audit-event examples with hash chaining. |
 | `scripts/run_demo.py` | Offline deterministic generator. |
 | `Makefile` | Convenience target for running the demo. |
@@ -85,7 +96,9 @@ Generated files:
 - data/model_comparison_results.json
 - reports/ai_vendor_exit_report.md
 - reports/ai_vendor_exit_report.json
+- reports/aimeter_summary.json
 - reports/cost_outcome_summary.md
+- audit/audit_events.jsonl
 - audit/ai_audit_events.jsonl
 ```
 

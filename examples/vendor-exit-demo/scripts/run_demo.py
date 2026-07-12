@@ -212,42 +212,125 @@ Boundaries:
 """
 
 
+def aimeter_summary(report: dict) -> dict:
+    comparison = report["comparison"]
+    return {
+        "schema_version": "linux-of-ai.aimeter-export.v1",
+        "generated_at": report["generated_at"],
+        "source": {
+            "service": "linux-of-ai-vendor-exit-demo",
+            "component": "run_demo.py",
+            "export_type": "aimeter-oss-style-cost-outcome-summary",
+            "integration_mode": "offline-file-export",
+        },
+        "workload": "customer-support-drafting",
+        "baseline": {
+            "provider": comparison["baseline"]["provider"],
+            "model": comparison["baseline"]["model"],
+            "quality_score": comparison["baseline"]["quality_score"],
+        },
+        "candidate": {
+            "provider": comparison["candidate"]["provider"],
+            "model": comparison["candidate"]["model"],
+            "quality_score": comparison["candidate"]["quality_score"],
+        },
+        "quality": {
+            "quality_retention_pct": comparison["quality_retained_percent"],
+        },
+        "cost": {
+            "baseline_estimated_cost": {
+                "amount": comparison["baseline"]["estimated_cost_usd"],
+                "currency": "USD",
+                "basis": "estimated",
+                "invoice_confirmed": False,
+            },
+            "candidate_estimated_cost": {
+                "amount": comparison["candidate"]["estimated_cost_usd"],
+                "currency": "USD",
+                "basis": "estimated",
+                "invoice_confirmed": False,
+            },
+            "estimated_cost_reduction_pct": comparison["estimated_cost_reduction_percent"],
+            "projected_savings_realized": False,
+        },
+        "latency": {
+            "latency_delta_pct": comparison["latency_change_percent"],
+        },
+        "outcome": {
+            "decision": comparison["decision"],
+            "recommendation": comparison["recommended_use"],
+        },
+        "limitations": [
+            "This is an AIMeter OSS-style portable export, not a live AIMeter runtime integration.",
+            "Estimated cost is not invoice-confirmed.",
+            "Projected savings are not realized savings.",
+            "Missing pricing must remain unknown and must not be treated as zero.",
+        ],
+    }
+
+
 def audit_events(report: dict) -> list[dict]:
     base_events = [
         {
             "event_id": "audit-0001",
-            "event_type": "ontology.loaded",
+            "event_type": "vendor_exit_report_started",
             "actor": "vendor-exit-demo",
+            "run_id": "vendor-exit-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
             "timestamp": "2026-01-01T00:00:00Z",
-            "summary": "Loaded support ontology fixture.",
+            "summary": "Started deterministic vendor-exit demo report generation.",
         },
         {
             "event_id": "audit-0002",
-            "event_type": "policy.evaluated",
+            "event_type": "model_comparison_loaded",
             "actor": "vendor-exit-demo",
+            "run_id": "vendor-exit-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
             "timestamp": "2026-01-01T00:00:01Z",
-            "summary": "Evaluated support-agent policy fixture.",
+            "summary": "Loaded deterministic baseline and candidate comparison fixtures.",
         },
         {
             "event_id": "audit-0003",
-            "event_type": "benchmark.completed",
+            "event_type": "thresholds_evaluated",
             "actor": "vendor-exit-demo",
+            "run_id": "vendor-exit-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
             "timestamp": "2026-01-01T00:00:02Z",
-            "summary": "Generated deterministic model comparison results.",
+            "summary": "Evaluated quality, cost, latency, and workflow boundaries.",
             "estimated_cost_reduction_percent": report["comparison"]["estimated_cost_reduction_percent"],
             "quality_retained_percent": report["comparison"]["quality_retained_percent"],
         },
         {
             "event_id": "audit-0004",
-            "event_type": "recommendation.recorded",
+            "event_type": "vendor_exit_decision_recorded",
             "actor": "vendor-exit-demo",
+            "run_id": "vendor-exit-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
             "timestamp": "2026-01-01T00:00:03Z",
             "summary": report["conclusion"]["decision"],
             "recommended_use": report["conclusion"]["recommended_use"],
         },
+        {
+            "event_id": "audit-0005",
+            "event_type": "report_generated",
+            "actor": "vendor-exit-demo",
+            "run_id": "vendor-exit-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:04Z",
+            "summary": "Generated AI Vendor Exit Report Markdown and JSON.",
+        },
+        {
+            "event_id": "audit-0006",
+            "event_type": "aimeter_export_generated",
+            "actor": "vendor-exit-demo",
+            "run_id": "vendor-exit-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:05Z",
+            "summary": "Generated AIMeter OSS-style cost/outcome export JSON.",
+        },
     ]
 
-    previous_hash = "0" * 64
+    previous_hash = None
     chained_events = []
     for event in base_events:
         event = dict(event)
@@ -271,18 +354,20 @@ def main() -> int:
 
     write_json(DATA_DIR / "model_comparison_results.json", comparison)
     write_json(REPORTS_DIR / "ai_vendor_exit_report.json", report)
+    write_json(REPORTS_DIR / "aimeter_summary.json", aimeter_summary(report))
     write_text(REPORTS_DIR / "ai_vendor_exit_report.md", render_report(report))
     write_text(REPORTS_DIR / "cost_outcome_summary.md", render_cost_summary(report))
-    write_text(
-        AUDIT_DIR / "ai_audit_events.jsonl",
-        "".join(json.dumps(event, sort_keys=True) + "\n" for event in events),
-    )
+    audit_jsonl = "".join(json.dumps(event, sort_keys=True) + "\n" for event in events)
+    write_text(AUDIT_DIR / "audit_events.jsonl", audit_jsonl)
+    write_text(AUDIT_DIR / "ai_audit_events.jsonl", audit_jsonl)
 
     generated = [
         DATA_DIR / "model_comparison_results.json",
         REPORTS_DIR / "ai_vendor_exit_report.md",
         REPORTS_DIR / "ai_vendor_exit_report.json",
+        REPORTS_DIR / "aimeter_summary.json",
         REPORTS_DIR / "cost_outcome_summary.md",
+        AUDIT_DIR / "audit_events.jsonl",
         AUDIT_DIR / "ai_audit_events.jsonl",
     ]
 

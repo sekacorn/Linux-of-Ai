@@ -76,6 +76,11 @@ AIMeter OSS measures estimated cost, usage, efficiency, budgets, and outcomes. M
 
 Start with the [Linux of AI Vendor Exit Demo](../examples/vendor-exit-demo/). The demo is deterministic, offline-first, and file-based. It demonstrates the integration pattern using portable files and reports, not deep runtime integration.
 
+The demo now includes the same portable export pattern supported by
+ModelSwapBench's AI Vendor Exit Report: an AIMeter OSS-style
+`reports/aimeter_summary.json` file for cost/outcome measurement and an
+AIAuditLog-style `audit/audit_events.jsonl` file for audit evidence.
+
 ## Install commands
 
 ```bash

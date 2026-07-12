@@ -27,7 +27,10 @@ You can also inspect the [Linux of AI Vendor Exit Demo](examples/vendor-exit-dem
 
 The [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) shows how the ecosystem can help a team evaluate replacing an expensive or locked-in AI model using portable ontology, policy, benchmarking, audit evidence, and cost/outcome measurement.
 
-This demo is deterministic and offline-first. It demonstrates the integration pattern using portable files and reports.
+This demo is deterministic and offline-first. It demonstrates the integration
+pattern using portable files and reports, including AIMeter OSS-style
+cost/outcome JSON and AIAuditLog-style audit-event JSONL exports from the model
+replacement decision.
 
 ## Project Status
 

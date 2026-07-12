@@ -1,0 +1,53 @@
+{
+  "schema_version": "linux-of-ai.aimeter-export.v1",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "source": {
+    "service": "linux-of-ai-vendor-exit-demo",
+    "component": "run_demo.py",
+    "export_type": "aimeter-oss-style-cost-outcome-summary",
+    "integration_mode": "offline-file-export"
+  },
+  "workload": "customer-support-drafting",
+  "baseline": {
+    "provider": "hosted-example",
+    "model": "premium-model",
+    "quality_score": "0.92"
+  },
+  "candidate": {
+    "provider": "local-example",
+    "model": "local-small-model",
+    "quality_score": "0.83"
+  },
+  "quality": {
+    "quality_retention_pct": "90.22"
+  },
+  "cost": {
+    "baseline_estimated_cost": {
+      "amount": "12.50",
+      "currency": "USD",
+      "basis": "estimated",
+      "invoice_confirmed": false
+    },
+    "candidate_estimated_cost": {
+      "amount": "1.10",
+      "currency": "USD",
+      "basis": "estimated",
+      "invoice_confirmed": false
+    },
+    "estimated_cost_reduction_pct": "91.20",
+    "projected_savings_realized": false
+  },
+  "latency": {
+    "latency_delta_pct": "29.17"
+  },
+  "outcome": {
+    "decision": "Candidate acceptable with human review",
+    "recommendation": "low-risk internal support workflows"
+  },
+  "limitations": [
+    "This is an AIMeter OSS-style portable export, not a live AIMeter runtime integration.",
+    "Estimated cost is not invoice-confirmed.",
+    "Projected savings are not realized savings.",
+    "Missing pricing must remain unknown and must not be treated as zero."
+  ]
+}
