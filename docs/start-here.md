@@ -6,6 +6,24 @@ This guide helps you choose a practical first project in the Linux of AI ecosyst
 
 Linux of AI is a free, open-source ecosystem for building portable, governed, measurable, and replaceable AI infrastructure so organizations are not locked into one AI vendor, model, or platform.
 
+## First recommended action
+
+Start with the [Linux of AI Quickstart Kit](quickstart-kit.md):
+
+1. Generate a quickstart workspace.
+2. Inspect the generated AI System Map.
+3. Run the generated project.
+4. Review the AI Vendor Exit Report and Model Routing Plan.
+5. Replace the fictional fixture data with your own reviewed workload data.
+
+```bash
+python scripts/create_vendor_exit_project.py my-ai-exit-check
+cd my-ai-exit-check
+python run.py
+```
+
+The command is offline, deterministic, and standard-library-only. It demonstrates portable files and reports rather than a verified live runtime integration among the seven projects.
+
 ## What problem are you trying to solve?
 
 ### 1. I want to reduce AI vendor lock-in

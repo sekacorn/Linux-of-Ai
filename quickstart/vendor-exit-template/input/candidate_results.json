@@ -1,0 +1,12 @@
+{
+  "average_latency_seconds": "1.48",
+  "currency": "USD",
+  "estimated_cost_usd": "3.25",
+  "label": "deterministic fictional candidate",
+  "model": "local-small-model",
+  "notes": "Fixture data only. No local model was executed.",
+  "provider": "local-example",
+  "quality_score": "0.84",
+  "task_count": 11,
+  "workflow": "fictional-customer-support"
+}

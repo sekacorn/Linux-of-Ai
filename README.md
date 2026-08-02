@@ -23,6 +23,29 @@ New to Linux of AI? Start with the [Start Here guide](docs/start-here.md) to cho
 
 You can also inspect the [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) to see the ecosystem pattern in one deterministic, offline-first example.
 
+## Quickstart Kit
+
+New to Linux of AI? Generate a complete offline vendor-exit workspace:
+
+```bash
+python scripts/create_vendor_exit_project.py my-ai-exit-check
+cd my-ai-exit-check
+python run.py
+```
+
+The quickstart creates a fictional customer-support AI workload with:
+
+- an AI System Map;
+- a policy file;
+- model comparison inputs;
+- an AI Vendor Exit Report;
+- a Model Routing Plan;
+- AIMeter OSS-style cost and outcome summaries;
+- AIAuditLog-style audit events;
+- a Mermaid diagram.
+
+It uses deterministic fixture data, requires only the Python standard library, and makes no external API calls. See the [Quickstart Kit guide](docs/quickstart-kit.md) for the generated file map, replacement workflow, and limitations.
+
 ## Flagship Demo
 
 The [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) shows how the ecosystem can help a team evaluate replacing an expensive or locked-in AI model using portable ontology, policy, benchmarking, audit evidence, and cost/outcome measurement.
@@ -61,11 +84,11 @@ It is open infrastructure for building, evaluating, governing, auditing, and mea
 
 If you are new, start here:
 
-1. Read [docs/start-here.md](docs/start-here.md)
-2. Run or inspect [examples/vendor-exit-demo/](examples/vendor-exit-demo/)
-3. Try ModelSwapBench for model replacement decisions
-4. Try AIMeter OSS for cost and outcome measurement
-5. Add governance with AgentPolicyPack and audit evidence with AIAuditLog
+1. Generate a workspace with `python scripts/create_vendor_exit_project.py my-ai-exit-check`
+2. Run the generated `run.py` and inspect its AI System Map and reports
+3. Read [docs/start-here.md](docs/start-here.md)
+4. Run or inspect [examples/vendor-exit-demo/](examples/vendor-exit-demo/)
+5. Try the individual packages for deeper validation and runtime workflows
 
 ---
 

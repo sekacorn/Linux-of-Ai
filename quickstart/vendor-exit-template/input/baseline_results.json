@@ -1,0 +1,12 @@
+{
+  "average_latency_seconds": "1.20",
+  "currency": "USD",
+  "estimated_cost_usd": "25.00",
+  "label": "deterministic fictional baseline",
+  "model": "premium-model",
+  "notes": "Fixture data only. No hosted provider API was called.",
+  "provider": "hosted-example",
+  "quality_score": "0.92",
+  "task_count": 11,
+  "workflow": "fictional-customer-support"
+}

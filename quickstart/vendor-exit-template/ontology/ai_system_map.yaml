@@ -1,0 +1,146 @@
+schema_version: "1.0"
+
+system:
+  name: Fictional Customer Support Vendor Exit
+  purpose: Preserve workload routing and control meaning during a model migration evaluation.
+  risk_profile: medium
+  environment: deterministic-offline-quickstart
+  notes: This map describes a portable file pattern, not a live deployment.
+
+entities:
+  - name: SupportTicket
+    sensitivity: confidential
+  - name: SupportResponse
+    sensitivity: confidential
+  - name: EscalationRecord
+    sensitivity: confidential
+
+model_routes:
+  - name: candidate_model
+    description: Use the candidate only for explicitly permitted low-risk work.
+  - name: baseline_model
+    description: Keep work on the established baseline path.
+  - name: human_review
+    description: Route work to an authorized reviewer.
+  - name: blocked_or_escalate
+    description: Stop ordinary automation and use a declared escalation path.
+
+escalation_paths:
+  - {name: human_review, description: Authorized human review.}
+  - {name: security_review, description: Security response review.}
+  - {name: legal_review, description: Qualified legal review.}
+  - {name: compliance_review, description: Compliance review.}
+  - {name: do_not_answer, description: Do not generate an answer.}
+  - {name: baseline_model_only, description: Keep work on the established baseline path.}
+
+tasks:
+  - name: PasswordReset
+    category: password-reset
+    risk_level: low
+    allowed_routes: [candidate_model, baseline_model]
+    related_entities: [SupportTicket, SupportResponse]
+    expected_audit_events: [route_selected, guidance_drafted]
+    expected_metrics: [estimated_cost, resolution_outcome]
+  - name: InternalSummary
+    category: internal-summary
+    risk_level: low
+    allowed_routes: [candidate_model, baseline_model]
+    related_entities: [SupportTicket]
+    expected_audit_events: [route_selected, summary_generated]
+    expected_metrics: [estimated_cost, operator_outcome]
+  - name: BillingFAQ
+    category: billing-faq
+    risk_level: medium
+    allowed_routes: [baseline_model, human_review]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, SupportResponse]
+    expected_audit_events: [route_selected, review_requested]
+    expected_metrics: [estimated_cost, resolution_outcome]
+  - name: RefundRequest
+    category: refund-request
+    risk_level: medium
+    allowed_routes: [baseline_model, human_review]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, SupportResponse]
+    expected_audit_events: [route_selected, review_requested, refund_disposition]
+    expected_metrics: [estimated_cost, refund_outcome]
+  - name: AccountCancellation
+    category: account-cancellation
+    risk_level: medium
+    allowed_routes: [baseline_model, human_review]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, review_requested, account_action_disposition]
+    expected_metrics: [estimated_cost, cancellation_outcome]
+  - name: AngryCustomerEscalation
+    category: angry-customer-escalation
+    risk_level: high
+    allowed_routes: [baseline_model, human_review]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, escalation_created, reviewer_disposition]
+    expected_metrics: [estimated_cost, escalation_outcome]
+  - name: SecurityConcern
+    category: security-concern
+    risk_level: high
+    allowed_routes: [human_review, blocked_or_escalate]
+    human_review_required: true
+    escalation: [security_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, security_escalation_created]
+    expected_metrics: [estimated_cost, escalation_outcome]
+  - name: LegalQuestion
+    category: legal-question
+    risk_level: regulated
+    allowed_routes: [blocked_or_escalate]
+    human_review_required: true
+    escalation: [legal_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, legal_escalation_created]
+    expected_metrics: [estimated_cost, escalation_outcome]
+  - name: MedicalQuestion
+    category: medical-question
+    risk_level: regulated
+    allowed_routes: [blocked_or_escalate]
+    human_review_required: true
+    escalation: [do_not_answer]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, medical_escalation_created]
+    expected_metrics: [estimated_cost, escalation_outcome]
+  - name: FinancialQuestion
+    category: financial-question
+    risk_level: regulated
+    allowed_routes: [blocked_or_escalate]
+    human_review_required: true
+    escalation: [compliance_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, financial_escalation_created]
+    expected_metrics: [estimated_cost, escalation_outcome]
+  - name: UnclassifiedRequest
+    category: unclassified-request
+    risk_level: unknown
+    allowed_routes: [baseline_model, blocked_or_escalate]
+    human_review_required: true
+    escalation: [baseline_model_only]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, classification_requested]
+    expected_metrics: [estimated_cost, classification_outcome]
+
+integrations:
+  - {tool: ModelSwapBench, mode: portable_file_pattern, meaning: AI Vendor Exit Report and Model Routing Plan}
+  - {tool: AgentPolicyPack, mode: portable_file_pattern, meaning: governance rule fixture}
+  - {tool: AIAuditLog, mode: portable_file_pattern, meaning: hash-chained event JSONL}
+  - {tool: AIMeter OSS, mode: portable_file_pattern, meaning: estimated cost and outcome JSON}
+  - {tool: AgentForge, mode: future_runtime_pattern, meaning: possible workflow orchestration}
+  - {tool: PrivateAIStack, mode: future_runtime_pattern, meaning: possible controlled private execution}
+
+limitations:
+  - This map is documentation and validation support, not compliance certification.
+  - This map does not prove a workflow is safe or automatically enforce policy.
+  - This map does not guarantee model behavior or replace qualified human review.
+  - Integration entries are portable patterns, not verified live integrations.
+  - All workload data is fictional and deterministic.

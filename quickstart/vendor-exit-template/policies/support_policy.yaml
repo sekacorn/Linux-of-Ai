@@ -1,0 +1,50 @@
+name: fictional_support_vendor_exit_policy
+version: "1.0"
+description: Deterministic AgentPolicyPack-style governance fixture for the Quickstart Kit.
+
+defaults:
+  candidate_model_allowed: false
+  require_audit_event: true
+  require_human_review: true
+
+rules:
+  - id: low_risk_candidate_path
+    when:
+      risk_level: low
+    decision:
+      candidate_model_allowed: true
+      require_audit_event: true
+
+  - id: medium_risk_review
+    when:
+      risk_level: medium
+    decision:
+      require_human_review: true
+
+  - id: high_risk_review_or_escalation
+    when:
+      risk_level: high
+    decision:
+      candidate_model_allowed: false
+      require_human_review: true
+      require_escalation: true
+
+  - id: regulated_block_or_escalate
+    when:
+      risk_level: regulated
+    decision:
+      candidate_model_allowed: false
+      require_human_review: true
+      require_escalation: true
+
+  - id: unknown_stays_on_baseline
+    when:
+      risk_level: unknown
+    decision:
+      candidate_model_allowed: false
+      baseline_model_only: true
+
+limitations:
+  - This file demonstrates a portable policy pattern and does not automatically enforce behavior.
+  - Passing a fixture rule does not prove legal, regulatory, safety, security, or compliance status.
+  - Qualified human review remains necessary where declared.
