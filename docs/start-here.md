@@ -40,6 +40,11 @@ Recommended first step:
 
 ModelSwapBench helps compare a baseline model against a candidate replacement model. AIMeter OSS helps measure estimated cost, usage, efficiency, and outcomes. AIAuditLog helps record portable audit evidence.
 
+Start with the AI Vendor Exit Report to compare a baseline and candidate model
+for a workload. Then use the Model Routing Plan for gradual migration: move
+low-risk passing tasks first, keep high-risk or borderline tasks under human
+review, and escalate blocked or insufficiently evaluated work.
+
 ### 2. I want private or local AI infrastructure
 
 Start with:
@@ -66,7 +71,9 @@ Start with:
 - OpenOntologyLite
 - AgentPolicyPack
 
-OpenOntologyLite defines entities, relationships, actions, permissions, and business meaning outside one vendor platform. AgentPolicyPack can use that meaning to govern behavior.
+Start with OpenOntologyLite's AI System Map.
+
+OpenOntologyLite defines entities, relationships, actions, permissions, and business meaning outside one vendor platform. Its AI System Map also records workload risk, allowed model routes, human review, escalation, audit, and cost expectations. AgentPolicyPack can use that portable meaning as an integration pattern for governing behavior; this repository does not claim a verified live integration.
 
 ### 5. I want to measure AI cost and outcomes
 
@@ -85,19 +92,21 @@ AIMeter OSS measures estimated cost, usage, efficiency, budgets, and outcomes. M
 | Measure AI cost, usage, or outcomes | AIMeter OSS |
 | Record audit evidence | AIAuditLog |
 | Govern agent behavior | AgentPolicyPack |
-| Define business meaning | OpenOntologyLite |
+| Define business meaning or map AI workloads | OpenOntologyLite |
 | Orchestrate agents | AgentForge |
 | Run private/local AI infrastructure | PrivateAIStack |
 | See the whole ecosystem pattern | Linux of AI Vendor Exit Demo |
 
 ## Recommended first demo
 
-Start with the [Linux of AI Vendor Exit Demo](../examples/vendor-exit-demo/). The demo is deterministic, offline-first, and file-based. It demonstrates the integration pattern using portable files and reports, not deep runtime integration.
+Start with the [Linux of AI Vendor Exit Demo](../examples/vendor-exit-demo/). The demo is deterministic, offline-first, and file-based. Its `ontology/ai_system_map.yaml` preserves task-level routing and control meaning alongside the benchmark fixtures. It demonstrates the integration pattern using portable files and reports, not deep runtime integration.
 
 The demo now includes the same portable export pattern supported by
-ModelSwapBench's AI Vendor Exit Report: an AIMeter OSS-style
-`reports/aimeter_summary.json` file for cost/outcome measurement and an
-AIAuditLog-style `audit/audit_events.jsonl` file for audit evidence.
+ModelSwapBench's AI Vendor Exit Report and Model Routing Plan: AIMeter
+OSS-style JSON files for cost/outcome measurement and AIAuditLog-style JSONL
+files for audit evidence.
+
+The flagship demo is an example that stays inside this repository. The Quickstart Kit is a generator that creates a separate starter workspace you can edit without changing the flagship example.
 
 ## Install commands
 

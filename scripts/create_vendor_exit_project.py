@@ -19,6 +19,32 @@ class QuickstartError(RuntimeError):
     """Raised when a quickstart workspace cannot be created safely."""
 
 
+def _is_link_like(path: Path) -> bool:
+    """Return whether *path* can redirect writes to another location."""
+    if path.is_symlink():
+        return True
+    is_junction = getattr(path, "is_junction", None)
+    return bool(is_junction and is_junction())
+
+
+def _reject_redirected_destinations(template: Path, target: Path) -> None:
+    """Reject template-owned destination paths that traverse links or junctions."""
+    checked: set[Path] = set()
+    for source in template.rglob("*"):
+        current = target
+        for part in source.relative_to(template).parts:
+            current /= part
+            if current in checked:
+                continue
+            checked.add(current)
+            if _is_link_like(current):
+                relative_path = current.relative_to(target).as_posix()
+                raise QuickstartError(
+                    "Refusing to overwrite a symbolic link or junction in the "
+                    f"output directory: {relative_path}"
+                )
+
+
 def _display_name(value: str) -> str:
     """Remove terminal control characters from a user-provided path name."""
     cleaned = "".join(
@@ -41,9 +67,9 @@ def create_project(target_argument: Path, *, force: bool = False) -> Path:
     if not template.is_dir():
         raise QuickstartError(f"Quickstart template is missing: {TEMPLATE_ROOT}")
 
-    if target_argument.is_symlink():
+    if _is_link_like(target_argument):
         raise QuickstartError(
-            "Refusing to write through a symbolic-link target directory."
+            "Refusing to write through a symbolic-link or junction target directory."
         )
 
     target = target_argument.expanduser().resolve(strict=False)
@@ -63,6 +89,7 @@ def create_project(target_argument: Path, *, force: bool = False) -> Path:
         )
 
     target.mkdir(parents=True, exist_ok=True)
+    _reject_redirected_destinations(template, target)
     shutil.copytree(
         template,
         target,

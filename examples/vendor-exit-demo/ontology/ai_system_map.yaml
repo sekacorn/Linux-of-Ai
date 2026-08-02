@@ -1,0 +1,180 @@
+schema_version: "1.0"
+
+system:
+  name: Customer Support Vendor Exit
+  purpose: Preserve workload routing and control meaning during a model migration evaluation.
+  owner_label: Customer Support Operations
+  risk_profile: medium
+  environment: deterministic-demo
+  notes: This fictional map describes an integration pattern, not a live deployment.
+
+entities:
+  - name: SupportTicket
+    description: A fictional customer-support request.
+    sensitivity: confidential
+    fields: [ticket_reference, category, status, message_text]
+  - name: CustomerAccount
+    description: Minimum fictional account context for a request.
+    sensitivity: restricted
+    fields: [account_reference, service_tier, region]
+  - name: SupportResponse
+    description: A proposed or reviewed support response.
+    sensitivity: confidential
+    fields: [response_text, disposition, reviewer_status]
+  - name: EscalationRecord
+    description: The reason and destination for stopped automation.
+    sensitivity: confidential
+    fields: [escalation_type, reason, status]
+
+model_routes:
+  - name: candidate_model
+    description: Evaluate the lower-cost candidate for permitted tasks.
+  - name: baseline_model
+    description: Keep work on the established baseline model.
+  - name: human_review
+    description: Route work to an authorized reviewer.
+  - name: blocked_or_escalate
+    description: Block automation or use a declared escalation path.
+
+escalation_paths:
+  - name: human_review
+    description: Authorized human review.
+  - name: security_review
+    description: Security response review.
+  - name: legal_review
+    description: Qualified legal review.
+  - name: compliance_review
+    description: Compliance review.
+  - name: do_not_answer
+    description: Do not generate an answer.
+  - name: baseline_model_only
+    description: Keep the task on the established baseline path.
+
+tasks:
+  - name: PasswordReset
+    description: Draft documented password-reset guidance without changing an account.
+    category: account-access
+    risk_level: low
+    customer_facing: true
+    allowed_routes: [candidate_model, baseline_model]
+    related_entities: [SupportTicket, CustomerAccount, SupportResponse]
+    expected_audit_events: [route_selected, guidance_drafted]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, resolution_outcome]
+  - name: InternalSummary
+    description: Summarize a support ticket for an operator.
+    category: support
+    risk_level: low
+    allowed_routes: [candidate_model, baseline_model]
+    related_entities: [SupportTicket]
+    expected_audit_events: [route_selected, summary_generated]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, operator_outcome]
+  - name: RefundRequest
+    description: Prepare a refund request for baseline handling and required human review.
+    category: refund
+    risk_level: medium
+    customer_facing: true
+    allowed_routes: [baseline_model, human_review]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, CustomerAccount, SupportResponse]
+    expected_audit_events: [route_selected, review_requested, refund_disposition]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, refund_outcome]
+  - name: BillingFAQ
+    description: Answer an approved billing FAQ without changing an account.
+    category: billing-faq
+    risk_level: medium
+    customer_facing: true
+    allowed_routes: [candidate_model, baseline_model, human_review]
+    related_entities: [SupportTicket, SupportResponse]
+    expected_audit_events: [route_selected, answer_drafted]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, resolution_outcome]
+  - name: AccountCancellation
+    description: Prepare an account cancellation for required human action.
+    category: account-change
+    risk_level: medium
+    customer_facing: true
+    allowed_routes: [baseline_model, human_review]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, CustomerAccount, EscalationRecord]
+    expected_audit_events: [route_selected, review_requested, account_action_disposition]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, cancellation_outcome]
+  - name: AngryCustomerEscalation
+    description: Route an escalation request to a supervisor.
+    category: support-escalation
+    risk_level: high
+    customer_facing: true
+    allowed_routes: [human_review, baseline_model]
+    human_review_required: true
+    escalation: [human_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, escalation_created, reviewer_disposition]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, escalation_outcome]
+  - name: SecurityConcern
+    description: Stop ordinary automation for a potential security incident.
+    category: security
+    risk_level: high
+    customer_facing: true
+    allowed_routes: [human_review, blocked_or_escalate]
+    human_review_required: true
+    escalation: [security_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, security_escalation_created]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, escalation_outcome]
+  - name: LegalQuestion
+    description: Block automated legal advice.
+    category: legal
+    risk_level: regulated
+    customer_facing: true
+    allowed_routes: [blocked_or_escalate]
+    human_review_required: true
+    escalation: [legal_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, legal_escalation_created]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, escalation_outcome]
+  - name: MedicalQuestion
+    description: Block automated medical advice.
+    category: medical
+    risk_level: regulated
+    customer_facing: true
+    allowed_routes: [blocked_or_escalate]
+    human_review_required: true
+    escalation: [do_not_answer]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, medical_escalation_created]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, escalation_outcome]
+  - name: FinancialQuestion
+    description: Block automated financial advice.
+    category: financial
+    risk_level: regulated
+    customer_facing: true
+    allowed_routes: [blocked_or_escalate]
+    human_review_required: true
+    escalation: [compliance_review]
+    related_entities: [SupportTicket, EscalationRecord]
+    expected_audit_events: [route_selected, financial_escalation_created]
+    expected_metrics: [input_tokens, output_tokens, estimated_cost, escalation_outcome]
+
+integrations:
+  - tool: ModelSwapBench
+    meaning: Compare candidate and baseline behavior for declared tasks.
+  - tool: AgentPolicyPack
+    meaning: Represent checks associated with route and review decisions.
+  - tool: AIAuditLog
+    meaning: Represent route, review, escalation, and disposition events.
+  - tool: AIMeter OSS
+    meaning: Represent token and estimated cost measurements.
+  - tool: PrivateAIStack
+    meaning: Represent a controlled self-hosted candidate execution option.
+  - tool: AgentForge
+    meaning: Represent orchestration that could consume the portable map.
+
+limitations:
+  - This map provides documentation and validation support, not compliance certification.
+  - This map does not prove that a workflow is safe.
+  - This map does not replace human review for high-risk uses.
+  - This map does not prove legal, regulatory, safety, or security compliance.
+  - This map does not guarantee model behavior.
+  - This map does not enforce policy unless connected to enforcement systems.
+  - Integration entries describe portable patterns, not verified live integrations.
+  - The demo uses deterministic fixture data and makes no provider calls.

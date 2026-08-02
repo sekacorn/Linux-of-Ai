@@ -1,0 +1,47 @@
+{
+  "schema_version": "linux-of-ai.route-plan.aimeter-export.v1",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "source": {
+    "service": "linux-of-ai-vendor-exit-demo",
+    "component": "run_demo.py",
+    "export_type": "aimeter-oss-style-route-cost-outcome-summary",
+    "integration_mode": "offline-file-export"
+  },
+  "workload": "customer-support-drafting",
+  "baseline_model": "hosted-example:premium-model",
+  "candidate_model": "local-example:local-small-model",
+  "cost": {
+    "baseline_total_estimated_cost": {
+      "amount": "12.50",
+      "currency": "USD",
+      "basis": "estimated",
+      "invoice_confirmed": false
+    },
+    "routed_blended_estimated_cost": {
+      "amount": "10.87",
+      "currency": "USD",
+      "basis": "estimated",
+      "invoice_confirmed": false
+    },
+    "estimated_savings_vs_baseline_pct": "13.03",
+    "projected_savings_realized": false
+  },
+  "routes": {
+    "candidate_model": 1,
+    "baseline_model": 0,
+    "human_review": 4,
+    "blocked_or_escalate": 2
+  },
+  "outcome": {
+    "recommendation": "Move low-risk candidate-routed tasks first, keep human review for sensitive tasks, and escalate blocked legal, medical, or financial tasks."
+  },
+  "limitations": [
+    "This route plan is deterministic fixture output, not a live ModelSwapBench run.",
+    "The integration pattern is offline-first and file-based.",
+    "Estimated cost is not invoice-confirmed.",
+    "Projected savings are not realized savings.",
+    "Route decisions are not legal, regulatory, safety, security, or compliance guarantees.",
+    "Human review may be required.",
+    "This is an AIMeter OSS-style portable export, not a live AIMeter runtime integration."
+  ]
+}

@@ -263,6 +263,37 @@ def verify() -> None:
                 "--force removed or changed an unrelated target file."
             )
 
+        outside = temporary_root / "outside-readme.md"
+        outside.write_text("must remain unchanged\n", encoding="utf-8")
+        linked_project = temporary_root / "linked-project"
+        linked_project.mkdir()
+        linked_readme = linked_project / "README.md"
+        try:
+            linked_readme.symlink_to(outside)
+        except (NotImplementedError, OSError):
+            pass
+        else:
+            redirected = _run(
+                [
+                    sys.executable,
+                    str(GENERATOR),
+                    str(linked_project),
+                    "--force",
+                ],
+                cwd=REPOSITORY_ROOT,
+            )
+            if (
+                redirected.returncode == 0
+                or "symbolic link or junction" not in redirected.stderr
+            ):
+                raise VerificationError(
+                    "Generator did not refuse a template-owned symlink destination."
+                )
+            if outside.read_text(encoding="utf-8") != "must remain unchanged\n":
+                raise VerificationError(
+                    "Generator wrote through a template-owned symlink destination."
+                )
+
 
 def main() -> int:
     try:

@@ -1,0 +1,111 @@
+{
+  "schema_version": "linux-of-ai.model-routing-plan.v1",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "workload": "customer-support-drafting",
+  "baseline_model": "hosted-example:premium-model",
+  "candidate_model": "local-example:local-small-model",
+  "summary": {
+    "total_tasks": 7,
+    "routes": {
+      "candidate_model": 1,
+      "baseline_model": 0,
+      "human_review": 4,
+      "blocked_or_escalate": 2
+    },
+    "candidate_model_pct": "14.29",
+    "baseline_model_pct": "0.00",
+    "human_review_pct": "57.14",
+    "blocked_or_escalate_pct": "28.57",
+    "baseline_total_estimated_cost": "12.50",
+    "routed_blended_estimated_cost": "10.87",
+    "estimated_blended_savings_pct": "13.03"
+  },
+  "task_decisions": [
+    {
+      "task_id": "TCK-1001",
+      "category": "password_reset",
+      "route": "candidate_model",
+      "risk_level": "low",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Low-risk password reset guidance can move to the candidate model."
+    },
+    {
+      "task_id": "TCK-1002",
+      "category": "billing_question",
+      "route": "human_review",
+      "risk_level": "medium",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Billing workflows are customer-facing and should keep review."
+    },
+    {
+      "task_id": "TCK-1003",
+      "category": "account_cancellation",
+      "route": "human_review",
+      "risk_level": "medium",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Account changes should keep review before customer action."
+    },
+    {
+      "task_id": "TCK-1004",
+      "category": "refund_request",
+      "route": "human_review",
+      "risk_level": "medium",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Refund requests require policy-aware review."
+    },
+    {
+      "task_id": "TCK-1005",
+      "category": "security_concern",
+      "route": "blocked_or_escalate",
+      "risk_level": "high",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Suspicious login activity requires escalation to the security process."
+    },
+    {
+      "task_id": "TCK-1006",
+      "category": "legal_medical_financial",
+      "route": "blocked_or_escalate",
+      "risk_level": "high",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Legal, medical, or financial questions require escalation."
+    },
+    {
+      "task_id": "TCK-1007",
+      "category": "angry_customer",
+      "route": "human_review",
+      "risk_level": "high",
+      "quality_signal": "fixture-level comparison only",
+      "cost_signal": "estimated",
+      "latency_signal": "estimated",
+      "policy_notes": [],
+      "reason": "Angry customer escalation requires human review before response."
+    }
+  ],
+  "recommendation": "Move low-risk candidate-routed tasks first, keep human review for sensitive tasks, and escalate blocked legal, medical, or financial tasks.",
+  "limitations": [
+    "This route plan is deterministic fixture output, not a live ModelSwapBench run.",
+    "The integration pattern is offline-first and file-based.",
+    "Estimated cost is not invoice-confirmed.",
+    "Projected savings are not realized savings.",
+    "Route decisions are not legal, regulatory, safety, security, or compliance guarantees.",
+    "Human review may be required."
+  ]
+}

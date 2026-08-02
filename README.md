@@ -55,6 +55,11 @@ pattern using portable files and reports, including AIMeter OSS-style
 cost/outcome JSON and AIAuditLog-style audit-event JSONL exports from the model
 replacement decision.
 
+ModelSwapBench can now produce both an AI Vendor Exit Report and a Model
+Routing Plan, helping teams decide not only whether a model can be replaced, but
+which tasks can move safely, which need human review, and which should stay on
+the baseline model.
+
 ## Project Status
 
 | Project | PyPI package | Role | Status |
@@ -62,7 +67,7 @@ replacement decision.
 | AgentForge | agentforge-oss | Agent orchestration | Published |
 | PrivateAIStack | privateaistack | Private/local deployment | Published |
 | ModelSwapBench | modelswapbench | Model replacement and vendor-exit reports | Published; includes AI Vendor Exit Report |
-| OpenOntologyLite | openontologylite | Portable ontology and business meaning | Published |
+| OpenOntologyLite | openontologylite | Portable ontology, business meaning, and AI workload maps | Published |
 | AgentPolicyPack | agentpolicypack | Policy-as-code for agents | Published |
 | AIAuditLog | aiauditlog | AI audit evidence | Published |
 | AIMeter OSS | aimeter-oss | AI cost, usage, efficiency, and outcome measurement | Published |
@@ -232,8 +237,11 @@ Each project can be used independently. Together, they form a portable foundatio
 - Portable ontology definitions in YAML or JSON
 - Typed entities, properties, relationships, and actions
 - Permissions and preconditions
+- Defines portable AI System Maps for tasks, risk levels, allowed model routes, human-review rules, audit expectations, and cost/outcome measurement expectations
 - Validation and canonical representation
 - Diffing, inspection, documentation, and diagram export
+
+The vendor-exit demo includes a portable [AI System Map](examples/vendor-exit-demo/ontology/ai_system_map.yaml) that assigns each customer-support task to `candidate_model`, `baseline_model`, `human_review`, or `blocked_or_escalate` paths. Its ecosystem entries document integration patterns only; they do not claim verified live integrations between the projects.
 - Local-first and offline operation
 
 **Why it matters:**  

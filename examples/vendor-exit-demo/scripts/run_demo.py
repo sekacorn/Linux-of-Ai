@@ -269,6 +269,192 @@ def aimeter_summary(report: dict) -> dict:
     }
 
 
+def route_plan_payload(tickets: list[dict], comparison: dict) -> dict:
+    route_rules = {
+        "password_reset": ("candidate_model", "Low-risk password reset guidance can move to the candidate model."),
+        "billing_question": ("human_review", "Billing workflows are customer-facing and should keep review."),
+        "account_cancellation": ("human_review", "Account changes should keep review before customer action."),
+        "refund_request": ("human_review", "Refund requests require policy-aware review."),
+        "security_concern": ("blocked_or_escalate", "Suspicious login activity requires escalation to the security process."),
+        "legal_medical_financial": ("blocked_or_escalate", "Legal, medical, or financial questions require escalation."),
+        "angry_customer": ("human_review", "Angry customer escalation requires human review before response."),
+    }
+    decisions = []
+    counts = {
+        "candidate_model": 0,
+        "baseline_model": 0,
+        "human_review": 0,
+        "blocked_or_escalate": 0,
+    }
+    for ticket in tickets:
+        route, reason = route_rules.get(ticket["category"], ("baseline_model", "Unmapped category remains on the baseline model."))
+        if ticket["risk_level"] == "high" and route == "candidate_model":
+            route = "human_review"
+            reason = "High-risk tasks are not routed directly to the candidate model."
+        counts[route] += 1
+        decisions.append(
+            {
+                "task_id": ticket["ticket_id"],
+                "category": ticket["category"],
+                "route": route,
+                "risk_level": ticket["risk_level"],
+                "quality_signal": "fixture-level comparison only",
+                "cost_signal": "estimated",
+                "latency_signal": "estimated",
+                "policy_notes": ticket.get("policy_flags", []),
+                "reason": reason,
+            }
+        )
+
+    total = Decimal(len(decisions))
+    baseline_cost = money(comparison["baseline"]["estimated_cost_usd"])
+    candidate_cost = money(comparison["candidate"]["estimated_cost_usd"])
+    candidate_share = Decimal(counts["candidate_model"]) / total
+    routed_cost = (candidate_cost * candidate_share) + (baseline_cost * (Decimal("1") - candidate_share))
+    savings = ((baseline_cost - routed_cost) / baseline_cost) * Decimal("100")
+
+    return {
+        "schema_version": "linux-of-ai.model-routing-plan.v1",
+        "generated_at": "2026-01-01T00:00:00Z",
+        "workload": "customer-support-drafting",
+        "baseline_model": f'{comparison["baseline"]["provider"]}:{comparison["baseline"]["model"]}',
+        "candidate_model": f'{comparison["candidate"]["provider"]}:{comparison["candidate"]["model"]}',
+        "summary": {
+            "total_tasks": len(decisions),
+            "routes": counts,
+            "candidate_model_pct": percent((Decimal(counts["candidate_model"]) / total) * Decimal("100")),
+            "baseline_model_pct": percent((Decimal(counts["baseline_model"]) / total) * Decimal("100")),
+            "human_review_pct": percent((Decimal(counts["human_review"]) / total) * Decimal("100")),
+            "blocked_or_escalate_pct": percent((Decimal(counts["blocked_or_escalate"]) / total) * Decimal("100")),
+            "baseline_total_estimated_cost": str(baseline_cost),
+            "routed_blended_estimated_cost": str(routed_cost.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            "estimated_blended_savings_pct": percent(savings),
+        },
+        "task_decisions": decisions,
+        "recommendation": (
+            "Move low-risk candidate-routed tasks first, keep human review for "
+            "sensitive tasks, and escalate blocked legal, medical, or financial tasks."
+        ),
+        "limitations": [
+            "This route plan is deterministic fixture output, not a live ModelSwapBench run.",
+            "The integration pattern is offline-first and file-based.",
+            "Estimated cost is not invoice-confirmed.",
+            "Projected savings are not realized savings.",
+            "Route decisions are not legal, regulatory, safety, security, or compliance guarantees.",
+            "Human review may be required.",
+        ],
+    }
+
+
+def render_route_plan(plan: dict) -> str:
+    summary = plan["summary"]
+    lines = [
+        "# Model Routing Plan",
+        "",
+        "## Executive Summary",
+        "",
+        plan["recommendation"],
+        "",
+        "## Models Compared",
+        "",
+        f'- Baseline model/provider: `{plan["baseline_model"]}`',
+        f'- Candidate model/provider: `{plan["candidate_model"]}`',
+        "",
+        "## Workload",
+        "",
+        f'- Workload name: {plan["workload"]}',
+        f'- Task count: {summary["total_tasks"]}',
+        "",
+        "## Routing Summary",
+        "",
+        f'- Candidate model: {summary["candidate_model_pct"]}% of tasks',
+        f'- Baseline model: {summary["baseline_model_pct"]}% of tasks',
+        f'- Human review: {summary["human_review_pct"]}% of tasks',
+        f'- Blocked/escalate: {summary["blocked_or_escalate_pct"]}% of tasks',
+        f'- Estimated blended savings: {summary["estimated_blended_savings_pct"]}%',
+        "",
+        "## Task Routing Table",
+        "",
+        "| Task | Category | Route | Risk | Reason |",
+        "|---|---|---|---|---|",
+    ]
+    for decision in plan["task_decisions"]:
+        lines.append(
+            f'| {decision["task_id"]} | {decision["category"]} | `{decision["route"]}` | '
+            f'{decision["risk_level"]} | {decision["reason"]} |'
+        )
+    lines.extend(
+        [
+            "",
+            "## Estimated Blended Cost Impact",
+            "",
+            f'- Baseline total estimated cost: ${summary["baseline_total_estimated_cost"]}',
+            f'- Routed/blended estimated cost: ${summary["routed_blended_estimated_cost"]}',
+            f'- Estimated savings vs baseline: {summary["estimated_blended_savings_pct"]}%',
+            "- Estimated cost is not invoice-confirmed.",
+            "- Projected savings are not realized savings.",
+            "",
+            "## Risk and Human Review",
+            "",
+            "- Human review remains required for sensitive or borderline tasks.",
+            "- Legal, medical, and financial tasks are blocked or escalated in this fixture.",
+            "",
+            "## Recommendation",
+            "",
+            plan["recommendation"],
+            "",
+            "## Limitations",
+            "",
+            *[f"- {limitation}" for limitation in plan["limitations"]],
+            "",
+            "## Reproducibility",
+            "",
+            "- Generated by `scripts/run_demo.py`.",
+            "- No hosted provider API was called.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def route_aimeter_summary(plan: dict) -> dict:
+    return {
+        "schema_version": "linux-of-ai.route-plan.aimeter-export.v1",
+        "generated_at": plan["generated_at"],
+        "source": {
+            "service": "linux-of-ai-vendor-exit-demo",
+            "component": "run_demo.py",
+            "export_type": "aimeter-oss-style-route-cost-outcome-summary",
+            "integration_mode": "offline-file-export",
+        },
+        "workload": plan["workload"],
+        "baseline_model": plan["baseline_model"],
+        "candidate_model": plan["candidate_model"],
+        "cost": {
+            "baseline_total_estimated_cost": {
+                "amount": plan["summary"]["baseline_total_estimated_cost"],
+                "currency": "USD",
+                "basis": "estimated",
+                "invoice_confirmed": False,
+            },
+            "routed_blended_estimated_cost": {
+                "amount": plan["summary"]["routed_blended_estimated_cost"],
+                "currency": "USD",
+                "basis": "estimated",
+                "invoice_confirmed": False,
+            },
+            "estimated_savings_vs_baseline_pct": plan["summary"]["estimated_blended_savings_pct"],
+            "projected_savings_realized": False,
+        },
+        "routes": plan["summary"]["routes"],
+        "outcome": {
+            "recommendation": plan["recommendation"],
+        },
+        "limitations": plan["limitations"]
+        + ["This is an AIMeter OSS-style portable export, not a live AIMeter runtime integration."],
+    }
+
+
 def audit_events(report: dict) -> list[dict]:
     base_events = [
         {
@@ -343,6 +529,86 @@ def audit_events(report: dict) -> list[dict]:
     return chained_events
 
 
+def route_audit_events(plan: dict) -> list[dict]:
+    base_events = [
+        {
+            "event_id": "route-audit-0001",
+            "event_type": "route_plan_started",
+            "actor": "vendor-exit-demo",
+            "run_id": "route-plan-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:10Z",
+            "summary": "Started deterministic model routing plan generation.",
+        },
+        {
+            "event_id": "route-audit-0002",
+            "event_type": "route_plan_input_loaded",
+            "actor": "vendor-exit-demo",
+            "run_id": "route-plan-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:11Z",
+            "summary": "Loaded deterministic ticket fixtures and comparison data.",
+        },
+        {
+            "event_id": "route-audit-0003",
+            "event_type": "routing_thresholds_evaluated",
+            "actor": "vendor-exit-demo",
+            "run_id": "route-plan-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:12Z",
+            "summary": "Evaluated routing boundaries for candidate, baseline, review, and escalation.",
+        },
+    ]
+    for index, decision in enumerate(plan["task_decisions"], start=4):
+        base_events.append(
+            {
+                "event_id": f"route-audit-{index:04d}",
+                "event_type": "task_route_decision_recorded",
+                "actor": "vendor-exit-demo",
+                "run_id": "route-plan-demo-2026-01-01",
+                "system_id": "linux-of-ai-vendor-exit-demo",
+                "timestamp": "2026-01-01T00:00:13Z",
+                "task_id": decision["task_id"],
+                "route": decision["route"],
+                "summary": decision["reason"],
+            }
+        )
+    base_events.append(
+        {
+            "event_id": f"route-audit-{len(base_events) + 1:04d}",
+            "event_type": "route_plan_generated",
+            "actor": "vendor-exit-demo",
+            "run_id": "route-plan-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:14Z",
+            "summary": "Generated Model Routing Plan Markdown and JSON.",
+        }
+    )
+    base_events.append(
+        {
+            "event_id": f"route-audit-{len(base_events) + 1:04d}",
+            "event_type": "aimeter_route_export_generated",
+            "actor": "vendor-exit-demo",
+            "run_id": "route-plan-demo-2026-01-01",
+            "system_id": "linux-of-ai-vendor-exit-demo",
+            "timestamp": "2026-01-01T00:00:15Z",
+            "summary": "Generated AIMeter OSS-style route cost/outcome export JSON.",
+        }
+    )
+
+    previous_hash = None
+    chained_events = []
+    for event in base_events:
+        event = dict(event)
+        event["previous_hash"] = previous_hash
+        canonical = json.dumps(event, sort_keys=True, separators=(",", ":"))
+        event_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        event["event_hash"] = event_hash
+        chained_events.append(event)
+        previous_hash = event_hash
+    return chained_events
+
+
 def main() -> int:
     baseline = read_json(DATA_DIR / "baseline_results.json")
     candidate = read_json(DATA_DIR / "candidate_results.json")
@@ -350,25 +616,36 @@ def main() -> int:
 
     comparison = comparison_payload(baseline, candidate)
     report = report_payload(tickets, comparison)
+    route_plan = route_plan_payload(tickets, comparison)
     events = audit_events(report)
+    route_events = route_audit_events(route_plan)
 
     write_json(DATA_DIR / "model_comparison_results.json", comparison)
     write_json(REPORTS_DIR / "ai_vendor_exit_report.json", report)
     write_json(REPORTS_DIR / "aimeter_summary.json", aimeter_summary(report))
+    write_json(REPORTS_DIR / "model_routing_plan.json", route_plan)
+    write_json(REPORTS_DIR / "route_aimeter_summary.json", route_aimeter_summary(route_plan))
     write_text(REPORTS_DIR / "ai_vendor_exit_report.md", render_report(report))
+    write_text(REPORTS_DIR / "model_routing_plan.md", render_route_plan(route_plan))
     write_text(REPORTS_DIR / "cost_outcome_summary.md", render_cost_summary(report))
     audit_jsonl = "".join(json.dumps(event, sort_keys=True) + "\n" for event in events)
+    route_audit_jsonl = "".join(json.dumps(event, sort_keys=True) + "\n" for event in route_events)
     write_text(AUDIT_DIR / "audit_events.jsonl", audit_jsonl)
     write_text(AUDIT_DIR / "ai_audit_events.jsonl", audit_jsonl)
+    write_text(AUDIT_DIR / "route_audit_events.jsonl", route_audit_jsonl)
 
     generated = [
         DATA_DIR / "model_comparison_results.json",
         REPORTS_DIR / "ai_vendor_exit_report.md",
         REPORTS_DIR / "ai_vendor_exit_report.json",
+        REPORTS_DIR / "model_routing_plan.md",
+        REPORTS_DIR / "model_routing_plan.json",
         REPORTS_DIR / "aimeter_summary.json",
+        REPORTS_DIR / "route_aimeter_summary.json",
         REPORTS_DIR / "cost_outcome_summary.md",
         AUDIT_DIR / "audit_events.jsonl",
         AUDIT_DIR / "ai_audit_events.jsonl",
+        AUDIT_DIR / "route_audit_events.jsonl",
     ]
 
     print("Linux of AI Vendor Exit Demo complete")
