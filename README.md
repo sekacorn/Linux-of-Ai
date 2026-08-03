@@ -12,6 +12,7 @@
   <a href="#the-mission">Mission</a> •
   <a href="#the-problem">The Problem</a> •
   <a href="#the-seven-projects">Projects</a> •
+  <a href="#ecosystem-evaluation-brief">Evaluation Brief</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#principles">Principles</a> •
   <a href="#get-started">Get Started</a>
@@ -71,6 +72,60 @@ the baseline model.
 | AgentPolicyPack | agentpolicypack | Policy-as-code for agents | Published |
 | AIAuditLog | aiauditlog | AI audit evidence | Published |
 | AIMeter OSS | aimeter-oss | AI cost, usage, efficiency, and outcome measurement | Published |
+
+## Ecosystem Evaluation Brief
+
+The following visual brief compares the seven Linux of AI projects with the
+incumbents or adjacent tools each project would most realistically replace.
+Scores are a qualitative editorial assessment of documented capabilities and
+the current codebase, not results from a standardized external benchmark.
+Adoption and maturity scores intentionally reflect the projects' early alpha
+stage.
+
+<a href="linux-of-ai-enterprise-brief.png">
+  <img src="linux-of-ai-enterprise-brief.png" alt="Linux of AI enterprise evaluation brief comparing the seven-project ecosystem with industry incumbents" width="100%">
+</a>
+
+<details>
+<summary><strong>View the full-size project comparison cards</strong></summary>
+
+### AgentForge comparison
+
+<a href="linux-of-ai-agentforge-benchmark.png">
+  <img src="linux-of-ai-agentforge-benchmark.png" alt="AgentForge capability comparison with multi-agent orchestration alternatives" width="100%">
+</a>
+
+### AIAuditLog comparison
+
+<a href="linux-of-ai-aiauditlog-benchmark.png">
+  <img src="linux-of-ai-aiauditlog-benchmark.png" alt="AIAuditLog capability comparison with AI observability and audit alternatives" width="100%">
+</a>
+
+### AIMeter comparison
+
+<a href="linux-of-ai-aimeter-benchmark.png">
+  <img src="linux-of-ai-aimeter-benchmark.png" alt="AIMeter capability comparison with AI cost and usage measurement alternatives" width="100%">
+</a>
+
+### ModelSwapBench comparison
+
+<a href="linux-of-ai-modelswapbench-benchmark.png">
+  <img src="linux-of-ai-modelswapbench-benchmark.png" alt="ModelSwapBench capability comparison with model evaluation alternatives" width="100%">
+</a>
+
+### OpenOntologyLite comparison
+
+<a href="linux-of-ai-openontologylite-benchmark.png">
+  <img src="linux-of-ai-openontologylite-benchmark.png" alt="OpenOntologyLite capability comparison with ontology alternatives" width="100%">
+</a>
+
+### PrivateAIStack comparison
+
+<a href="linux-of-ai-privateaistack-benchmark.png">
+  <img src="linux-of-ai-privateaistack-benchmark.png" alt="PrivateAIStack capability comparison with local AI deployment alternatives" width="100%">
+</a>
+
+</details>
 
 ## What This Is Not
 
