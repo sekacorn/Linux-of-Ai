@@ -96,4 +96,4 @@ Do not put credentials or unnecessary personal data in these files. Treat real w
 
 ## License
 
-This quickstart template is available under the MIT License. See `LICENSE`.
+This quickstart template is available under the Apache License 2.0. See `LICENSE`.

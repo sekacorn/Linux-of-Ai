@@ -432,7 +432,7 @@ AI economics should be measured in terms of cost and acceptable outcomes, not to
 
 ### Free at the core
 
-The core software is free and open source under the MIT License.
+The core software is free and open source under the Apache License 2.0.
 
 ### No forced vendor dependency
 
@@ -559,7 +559,7 @@ The mission is not to place the core infrastructure behind a paywall. The missio
 
 ## License
 
-All projects in the Linux of AI ecosystem are intended to use the **MIT License**, unless a repository explicitly states otherwise.
+All projects in the Linux of AI ecosystem use the **Apache License 2.0**, unless a repository explicitly states otherwise.
 
 ---
 
