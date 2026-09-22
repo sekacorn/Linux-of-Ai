@@ -72,7 +72,7 @@ the baseline model.
 | AgentPolicyPack | agentpolicypack | Policy-as-code for agents | Published |
 | AIAuditLog | aiauditlog | AI audit evidence | Published |
 | AIMeter OSS | aimeter-oss | AI cost, usage, efficiency, and outcome measurement | Published |
-| AI Infrastructure Suite | ai-infrastructure-suite | Unified ecosystem installation and compatibility diagnostics | Beta candidate; not yet published |
+| AI Infrastructure Suite | ai-infrastructure-suite | Unified ecosystem installation and compatibility diagnostics | Published |
 
 ## Ecosystem Screenshots
 
@@ -220,7 +220,7 @@ Linux of AI addresses these problems as one connected ecosystem.
 | Model replacement | **ModelSwapBench** | Tests whether another model can deliver an acceptable outcome at lower cost, latency, or operational risk | [GitHub](https://github.com/sekacorn/ModelSwapBench) | [PyPI](https://pypi.org/project/modelswapbench/) |
 | Operational evidence | **AIAuditLog** | Defines a portable, tamper-evident audit-event format and local toolkit for AI systems and agents | [GitHub](https://github.com/sekacorn/AIAuditLog) | [PyPI](https://pypi.org/project/aiauditlog/) |
 | Cost and outcomes | **AIMeter OSS** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/AIMeter) | [PyPI](https://pypi.org/project/aimeter-oss/) |
-| Ecosystem setup | **AI Infrastructure Suite** | Provides a unified installer and compatibility diagnostics while keeping each project independently usable | [GitHub](https://github.com/sekacorn/AI-Infrastructure-Suite) | Beta candidate; not yet published |
+| Ecosystem setup | **AI Infrastructure Suite** | Provides a unified installer and compatibility diagnostics while keeping each project independently usable | [GitHub](https://github.com/sekacorn/AI-Infrastructure-Suite) | [PyPI](https://pypi.org/project/ai-infrastructure-suite/) |
 
 ---
 
@@ -482,9 +482,10 @@ pip install openontologylite
 pip install agentpolicypack
 pip install aiauditlog
 pip install aimeter-oss
+pip install ai-infrastructure-suite
 ```
 
-AI Infrastructure Suite is currently a Beta candidate and is not yet published to PyPI. When released, it will provide the `ai-suite` installer and compatibility diagnostics; for now, install the individual projects above.
+AI Infrastructure Suite provides the `ai-suite` installer and compatibility diagnostics. The individual projects remain independently installable and usable.
 
 Supported Python versions:
 
