@@ -11,8 +11,8 @@
 <p align="center">
   <a href="#the-mission">Mission</a> •
   <a href="#the-problem">The Problem</a> •
-  <a href="#the-seven-projects">Projects</a> •
-  <a href="#ecosystem-evaluation-brief">Evaluation Brief</a> •
+  <a href="#the-eight-projects">Projects</a> •
+  <a href="#ecosystem-screenshots">Screenshots</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#principles">Principles</a> •
   <a href="#get-started">Get Started</a>
@@ -72,6 +72,7 @@ the baseline model.
 | AgentPolicyPack | agentpolicypack | Policy-as-code for agents | Published |
 | AIAuditLog | aiauditlog | AI audit evidence | Published |
 | AIMeter OSS | aimeter-oss | AI cost, usage, efficiency, and outcome measurement | Published |
+| AI Infrastructure Suite | ai-infrastructure-suite | Unified ecosystem installation and compatibility diagnostics | Beta candidate; not yet published |
 
 ## Ecosystem Screenshots
 
@@ -144,7 +145,7 @@ If you are new, start here:
 
 ## The Mission
 
-**Linux of AI** is a seven-project open-source ecosystem created to reduce vendor lock-in and make practical AI infrastructure available to everyone.
+**Linux of AI** is an eight-project open-source ecosystem created to reduce vendor lock-in and make practical AI infrastructure available to everyone.
 
 The goal is simple:
 
@@ -208,7 +209,7 @@ Linux of AI addresses these problems as one connected ecosystem.
 
 ---
 
-## The Seven Projects
+## The Eight Projects
 
 | Layer | Project | What it solves | Repository | PyPI |
 |---|---|---|---|---|
@@ -219,6 +220,7 @@ Linux of AI addresses these problems as one connected ecosystem.
 | Model replacement | **ModelSwapBench** | Tests whether another model can deliver an acceptable outcome at lower cost, latency, or operational risk | [GitHub](https://github.com/sekacorn/ModelSwapBench) | [PyPI](https://pypi.org/project/modelswapbench/) |
 | Operational evidence | **AIAuditLog** | Defines a portable, tamper-evident audit-event format and local toolkit for AI systems and agents | [GitHub](https://github.com/sekacorn/AIAuditLog) | [PyPI](https://pypi.org/project/aiauditlog/) |
 | Cost and outcomes | **AIMeter OSS** | Measures AI usage, cost, efficiency, and business outcomes without assuming provider billing equals business value | [GitHub](https://github.com/sekacorn/AIMeter) | [PyPI](https://pypi.org/project/aimeter-oss/) |
+| Ecosystem setup | **AI Infrastructure Suite** | Provides a unified installer and compatibility diagnostics while keeping each project independently usable | [GitHub](https://github.com/sekacorn/AI-Infrastructure-Suite) | Beta candidate; not yet published |
 
 ---
 
@@ -266,6 +268,8 @@ AIMeter OSS
         ▼
 Usage, cost, efficiency, and outcome measurement
 ```
+
+**AI Infrastructure Suite** sits alongside these independently usable components as a lightweight installer and compatibility layer. It does not replace their packages or add their business logic.
 
 Each project can be used independently. Together, they form a portable foundation for building AI systems without making one provider the permanent center of the architecture.
 
@@ -479,6 +483,8 @@ pip install agentpolicypack
 pip install aiauditlog
 pip install aimeter-oss
 ```
+
+AI Infrastructure Suite is currently a Beta candidate and is not yet published to PyPI. When released, it will provide the `ai-suite` installer and compatibility diagnostics; for now, install the individual projects above.
 
 Supported Python versions:
 
