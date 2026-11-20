@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "linux-of-ai.vendor-exit-demo-config.v1"},
+    "thresholds": {
+      "type": "object",
+      "properties": {
+        "minimum_quality_retention_pct": {"type": ["string", "number"]},
+        "minimum_estimated_cost_reduction_pct": {"type": ["string", "number"]},
+        "maximum_latency_increase_pct": {"type": ["string", "number"]}
+      },
+      "required": [
+        "minimum_quality_retention_pct",
+        "minimum_estimated_cost_reduction_pct",
+        "maximum_latency_increase_pct"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": ["schema_version", "thresholds"],
+  "additionalProperties": false
+}

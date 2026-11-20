@@ -28,6 +28,8 @@ The command is offline, deterministic, and standard-library-only. It demonstrate
 
 ### 1. I want to reduce AI vendor lock-in
 
+With the AI Infrastructure Suite development checkout installed, run `ai-suite exit-report path/to/manifest.json` to inspect the portability evidence for your project. Use ModelSwapBench separately to evaluate replacement model behavior. [Manifest and scoring guide](https://github.com/sekacorn/AI-Infrastructure-Suite/blob/main/docs/exit-report.md).
+
 Start with:
 
 - ModelSwapBench

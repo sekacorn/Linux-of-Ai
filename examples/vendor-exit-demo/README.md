@@ -27,6 +27,10 @@ The conclusion in this fixture is intentionally narrow: the candidate is accepta
 
 ## Model Routing Plan
 
+The default manifest requires at least 90% baseline quality retention, at least 15% estimated cost reduction and at most 30% latency increase. The comparison uses unrounded percentages. Missing any threshold keeps candidate-eligible tasks on the baseline. A zero denominator invalidates the comparison.
+
+Defaults live in `data/demo_manifest.json`. Override that file with `--manifest PATH`, or override individual values with `--minimum-quality-retention-pct`, `--minimum-estimated-cost-reduction-pct`, and `--maximum-latency-increase-pct`. Effective thresholds are recorded in the comparison output.
+
 The demo now shows a more realistic migration path:
 
 - move low-risk tasks to the candidate/local model;
@@ -56,6 +60,7 @@ They do not claim deep runtime integration across the packages.
 | `data/customer_support_tickets.jsonl` | Fictional customer-support tickets. |
 | `data/baseline_results.json` | Deterministic hosted-model fixture. |
 | `data/candidate_results.json` | Deterministic local/open-model fixture. |
+| `data/demo_manifest.json` | Versioned default comparison thresholds. |
 | `data/model_comparison_results.json` | Generated comparison output. |
 | `ontology/support_ontology.yaml` | OpenOntologyLite-style business meaning. |
 | `ontology/ai_system_map.yaml` | OpenOntologyLite AI System Map for portable workload routing and control meaning. |
@@ -71,6 +76,7 @@ They do not claim deep runtime integration across the packages.
 | `audit/ai_audit_events.jsonl` | AIAuditLog-style audit-event examples with hash chaining. |
 | `audit/route_audit_events.jsonl` | AIAuditLog-style route-plan audit events with hash chaining. |
 | `scripts/run_demo.py` | Offline deterministic generator. |
+| `schemas/demo-config-v1.schema.json` | JSON Schema for the threshold manifest. |
 | `Makefile` | Convenience target for running the demo. |
 
 ## How to run
