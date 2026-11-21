@@ -232,6 +232,21 @@ therefore the one the publication order below already implies: publish
 fields in **one commit**, re-run the full matrix, and only then build and
 publish the suite. That commit is listed as step 4a below.
 
+**The suite's pull request stays open until `openontologylite==0.2.0b3` is on
+PyPI, and the step 4a commit lands in that same pull request.** This is a
+deliberate change from treating 4a as a post-merge commit. Confirmed against a
+real CI run on the suite's branch: with the published `0.2.0b2` installed,
+strict mypy reports three `attr-defined` errors for the missing JSON-LD names
+and every test that touches the ontology path fails, because the API genuinely
+is not there. The suite's pull request therefore **cannot go green before step
+3 publishes**, and merging it earlier would put a knowingly red commit on
+`main`. Keeping 4a inside the pull request means one review sees the floor
+raise and the CI run that the floor raise is what fixes.
+
+The jobs that do not exercise the ontology path pass meanwhile — build and
+verify artifacts, fresh install from wheel, fresh install from sdist, and the
+security scan — so the red is attributable rather than general.
+
 The same deferral applies to the `aiauditlog` and `modelswapbench` floors
 listed under required dependency changes. Those two are hygiene rather than
 correctness: the suite works against the currently published versions of both.
@@ -307,9 +322,16 @@ never be re-uploaded.
 # Per repository. Branch protection may require a PR instead of a direct push.
 git -C <repo> push origin feature/vendor-exit-evidence
 gh pr create --repo sekacorn/<repo> --base main --head feature/vendor-exit-evidence --fill
-# After review and green CI:
+# After review and green CI. Note the absence of --delete-branch:
 gh pr merge --repo sekacorn/<repo> --merge
 ```
+
+Never pass `--delete-branch` for OpenOntologyLite, and decline GitHub's
+offer to delete the head branch on that merge. Umbrella CI checks that branch
+out by name until 7-4. See the branch-retention section below.
+
+The suite's pull request is **not** merged in this step. It stays open until
+step 4a; see the deferral section.
 
 Repositories, in order: `AgentForge` (merge only, no release), `AIAuditLog`,
 `OpenOntologyLite`, `ModelSwapBench`, `AI-Infrastructure-Suite`.
@@ -350,18 +372,23 @@ gh run watch --repo sekacorn/ModelSwapBench
 ```
 
 **4a. Raise the suite's dependency floor — only now that 0.2.0b3 is on PyPI.**
-A separate commit, merged and verified before the suite is tagged. See the
-deferral section above for why this cannot happen earlier.
+This commit goes **into the still-open suite pull request**, not onto `main`
+after it. Its CI run is what first turns that pull request green; see the
+deferral section above.
 
 ```bash
-# In AI-Infrastructure-Suite, in one commit:
+# In AI-Infrastructure-Suite, on feature/vendor-exit-evidence, in one commit:
 #   pyproject.toml           openontologylite>=0.2.0b2  ->  >=0.2.0b3   (3 places)
 #   ecosystem-manifest.json  openontologylite version_specifier, minimum_version,
 #                            latest_published_version -> 0.2.0b3
 # Then, on 3.11, 3.12 and 3.13:
 python -m pytest && python -m ruff check . && python -m ruff format --check . \
   && python -m mypy && python -m bandit -c pyproject.toml -r src
+git push origin feature/vendor-exit-evidence
+gh pr checks 1 --repo sekacorn/AI-Infrastructure-Suite   # expect all green now
 ```
+
+Only then merge the suite's pull request, and only then tag it.
 
 **5. Publish `ai-infrastructure-suite==0.1.0b2`.** The tag push does **not**
 publish here; the dispatch does.
@@ -430,6 +457,22 @@ git -C <repo> push origin :refs/tags/<tag>   # only safe while nothing was uploa
 
 - AgentForge remains `0.5.4`; no tag or package publication is needed.
 - linux-ai-repo has no package version.
+
+## Do not delete `feature/vendor-exit-evidence` on merge
+
+**When the OpenOntologyLite pull request is merged, keep its
+`feature/vendor-exit-evidence` branch.** The umbrella repository's
+`offline-demos.yml` checks OpenOntologyLite out at that branch by name, so
+deleting it breaks umbrella CI immediately and stays broken until the CI
+reference switch below replaces the checkout with the released pin at 7-4.
+
+GitHub offers to delete the head branch on merge, and repositories can be set
+to do it automatically. Decline it for that merge. The branch may be deleted
+only after 7-4 is merged and the umbrella workflow is green against
+`openontologylite==0.2.0b3` from PyPI.
+
+The same caution applies to any repository whose branch another repository's
+CI names directly. Today that is OpenOntologyLite only.
 
 ## CI reference switch
 
