@@ -14,8 +14,8 @@ relative to `main`.
 | AIAuditLog | `0f43ec4` | `0.2.0b1` | `0.2.0b2` | Publish the bounded privacy-profile loading fix and regression test. |
 | OpenOntologyLite | `63b89cc` | `0.2.0b2` | `0.2.0b3` | Publish the lossless OpenOntologyLite JSON-LD transfer and round-trip API used by restore verification. |
 | ModelSwapBench | `52e6a71` | `0.1.0b1` | `0.1.0b2` | Publish explicit Ollama opt-in and the unintended-network regression test. |
-| AI Infrastructure Suite | `9007a8f`, `18ef614`, `ea9db42`, `08879be`, plus the Phase 2 close-out commit | `0.1.0b1` | `0.1.0b2` | Publish the 11-vector exit report, restore-summary verification, profile-level drift reporting, schemas, CLI mode, and tests after its dependencies are available. |
-| linux-ai-repo | `e101fda`, `5585f77`, `3fe3d9f`, `7cff992`, `42d1c0e`, plus the Phase 7 planning commit | Not packaged | No bump | Merge the demos, evidence contracts, documentation, and CI workflow after the released OpenOntologyLite pin replaces the temporary branch checkout. |
+| AI Infrastructure Suite | `9007a8f`, `18ef614`, `ea9db42`, `08879be`, the Phase 2 close-out commits, plus Phase 3a `5efbf3e`, `c5c5745`, `792ebed` | `0.1.0b1` | `0.1.0b2` | Publish the 11-vector exit report, restore-summary verification, profile-level drift reporting, embedding lock-in detection, schemas, CLI mode, and tests after its dependencies are available. |
+| linux-ai-repo | `e101fda`, `5585f77`, `3fe3d9f`, `7cff992`, `42d1c0e`, the Phase 7 planning commit, plus Phase 3a `c67f5f9`, `974a2d5`, `bb25459`, `41e2fa9`, `abe7ce7` | Not packaged | No bump | Merge the demos, evidence contracts, embedding evidence, documentation, and CI workflow after the released OpenOntologyLite pin replaces the temporary branch checkout. |
 
 AgentPolicyPack, AIMeter OSS, and PrivateAIStack do not have commits on this
 feature branch and require no Phase 7 version bump for this work.
@@ -41,6 +41,52 @@ Two consequences for Phase 7:
    reaches an older installed suite.
 2. State in the suite changelog that `0.1.0b2` is required to read a restore
    summary containing `embedding_stores`.
+
+## OpenOntologyLite dependency floor is now load-bearing
+
+Phase 3a verified this by installing the suite wheel outside any checkout.
+Ontology verification needs the OpenOntologyLite JSON-LD transfer API, which
+the released `openontologylite==0.2.0b2` does not provide, so with that
+version `ai-suite exit-report --verify-restores` cannot check the ontology
+vector at all. It now exits 2 naming `openontologylite>=0.2.0b3` rather than
+printing a traceback, but the check still cannot run.
+
+The existing publication order already handles this, since `openontologylite`
+is released before the suite. Two things must not be skipped:
+
+1. Raising the suite's floor to `openontologylite>=0.2.0b3,<0.3.0` (already
+   listed below) is a correctness requirement, not housekeeping. Releasing
+   `ai-infrastructure-suite==0.1.0b2` against the `0.2.0b2` floor would ship a
+   suite whose restore verification cannot complete on a clean install.
+2. The release gate for the suite must install the wheel into a fresh
+   environment outside the checkout and run `exit-report --verify-restores`
+   end to end, not only `exit-report`. A sibling checkout on `sys.path` hides
+   this failure completely.
+
+## Phase 3a additions to the suite release
+
+`ai-infrastructure-suite==0.1.0b2` now also publishes embedding lock-in
+detection. Three things follow for its release gate.
+
+- A new packaged schema, `embedding-portability.schema.json`, must be present
+  in both the wheel and the sdist, alongside the four existing schemas.
+- The new `docs/examples/embedding-portability/` fixture must resolve through
+  `importlib.resources` from the installed package, the way the existing
+  example does.
+- `exit-report` output gained a top-level `embedding_stores` section and two
+  `verification_level` values, `verified (local evidence)` and
+  `verified (local evidence + fake profiles)`. A consumer pinned to
+  `0.1.0b1`'s `exit-report.v1` schema will reject a report containing them,
+  because that schema sets `additionalProperties: false` and constrains the
+  level enum. This is the same one-directional compatibility as
+  `restore-summary.v1` below: no released pair is affected, since both
+  artifacts are pre-release, but the changelog must state that reading a
+  report with an embedding inventory requires `0.1.0b2`.
+
+The umbrella repository has no package version and gains no release step from
+Phase 3a. Its demo now declares a vector store in the restore bundle and
+carries derived evidence under `examples/restore-demo/evidence/`, which the
+existing merge step covers.
 
 ## Publication order
 
@@ -89,7 +135,8 @@ last among packages because it consumes all three releases.
 - Raise `aiauditlog>=0.2.0b1,<0.3.0` to
   `aiauditlog>=0.2.0b2,<0.3.0` in `core`, `privacy`, and `all`.
 - Raise `openontologylite>=0.2.0b2,<0.3.0` to
-  `openontologylite>=0.2.0b3,<0.3.0` in `core`, `privacy`, and `all`.
+  `openontologylite>=0.2.0b3,<0.3.0` in `core`, `privacy`, and `all`. This one
+  is a correctness requirement; see the dependency-floor section above.
 - Raise `modelswapbench>=0.1.0b1,<0.2.0` to
   `modelswapbench>=0.1.0b2,<0.2.0` in `benchmarking` and `all`.
 - Keep `agentforge-oss>=0.5.4,<0.6.0` unchanged because Phase 7 does not publish
@@ -113,7 +160,9 @@ must:
 2. Remove `OpenOntologyLite/pyproject.toml` from the pip cache key.
 3. Install exactly `openontologylite==0.2.0b3` from PyPI in the workflow.
 4. Run the restore-demo and vendor-exit-demo tests, Ruff, strict mypy, and
-   Bandit on Python 3.11, 3.12, and 3.13.
+   Bandit on Python 3.11, 3.12, and 3.13. The suite-dependent exit-report demo
+   keeps its own `mypy --strict --ignore-missing-imports` step, because this
+   workflow does not install the suite and its five scanner tests skip.
 5. Confirm the ontology round trip resolves from installed `site-packages`, not
    from a sibling checkout.
 
