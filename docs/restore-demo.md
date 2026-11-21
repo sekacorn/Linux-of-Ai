@@ -106,6 +106,48 @@ Each profile emits `restore-profile-record.v1` with:
 
 The machine sign-off is integrity metadata, not a person, legal signature, certificate, or external attestation. It contains no personal identity. The three profile records are referenced by `restore-summary.v1`, which also has a deterministic digest and is the artifact consumed by `ai-suite exit-report`.
 
+## Embedding portability evidence
+
+The bundle's `assets/embeddings.json` declares the vector store those copied
+vectors belong to, as `store_id` plus `store_evidence_sha256`. The runner
+relays the pair into the restore summary's `embedding_stores` block, so a
+verified restore of this bundle can be tied to one specific
+`embedding-portability.v1` document. The two fields are required together: a
+store name with no digest would name a claim without binding it to content.
+
+`evidence/embedding-portability.json` is that document. It is derived from the
+bundle rather than hand-written: `assets/embeddings.json` supplies one vector
+per record and `assets/memory.json` supplies the source text those vectors
+were produced from. Regenerate it with:
+
+```console
+python examples/restore-demo/scripts/run_embedding_evidence.py
+```
+
+Generation is deterministic, and a test compares a fresh generation against
+every committed byte, so the checked-in evidence cannot drift. The evidence
+references only its own vector and source files; it never contains a digest of
+the bundle manifest or of a restore summary. That direction matters, because
+the restore summary commits to the evidence digest — evidence committing back
+would leave neither document reproducible.
+
+The declared model is `portable-hash-v1`, a deterministic local function in
+this repository, so it is self-hostable by construction and Apache-2.0. It has
+no weight file, so no `weights_sha256` is declared and the report states that
+the weights are not pinned and re-embedding may not reproduce identical
+vectors.
+
+To see the whole chain reach a lock-in score of 0, with a separately installed
+AI Infrastructure Suite:
+
+```console
+python examples/restore-demo/scripts/run_exit_report_demo.py --output /tmp/exit-report-demo
+```
+
+That runs the restore demo, places the inventory beside its output, writes the
+`exit-manifest.v1` referencing both, and renders the verified report. Without
+the suite installed it explains what is missing and exits non-zero.
+
 ## Exit-report verification model
 
 An operator-supplied `restore-summary.v1` whose outer digest matches remains `attested`. A producer string inside the record is not trusted.

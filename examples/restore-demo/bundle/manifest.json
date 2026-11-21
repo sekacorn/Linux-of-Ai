@@ -11,7 +11,7 @@
     },
     "embeddings": {
       "path": "assets/embeddings.json",
-      "sha256": "156c7df43c9304ed3095b49842821b5578430ccf610e96cdd2c429057f9880f6"
+      "sha256": "61fb1bc72ce6436369c76788318e5703d3bf5f715bd699d5fb5377ee8e1d36f6"
     },
     "memory": {
       "path": "assets/memory.json",

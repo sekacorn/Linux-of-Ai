@@ -285,11 +285,20 @@ class EmbeddingStoreClaimTests(unittest.TestCase):
     STORE_ID = "support-memory"
     DIGEST = DIGEST_OK
 
+    CLAIM_FIELDS = ("store_id", "store_evidence_sha256")
+
     def _bundle_with(self, root: Path, **claim: object) -> Path:
+        """Copy the bundle and make its claim exactly ``claim``.
+
+        The shipped bundle declares a real claim, so every field is cleared
+        first; passing nothing produces a bundle with no claim at all.
+        """
         bundle = copied_bundle(root)
         document = json.loads(
             (bundle / "assets/embeddings.json").read_text(encoding="utf-8")
         )
+        for field in self.CLAIM_FIELDS:
+            document.pop(field, None)
         document.update(claim)
         replace_asset(
             bundle,
@@ -298,10 +307,24 @@ class EmbeddingStoreClaimTests(unittest.TestCase):
         )
         return bundle
 
-    def test_a_bundle_without_a_claim_omits_the_block(self) -> None:
+    def test_the_shipped_bundle_declares_its_store(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "output"
             demo.run_demo(BUNDLE, output)
+            summary = json.loads(
+                (output / "restore-summary.json").read_text(encoding="utf-8")
+            )
+
+            (claim,) = summary["embedding_stores"]
+            self.assertEqual(claim["store_id"], self.STORE_ID)
+            self.assertRegex(claim["store_evidence_sha256"], r"\A[0-9a-f]{64}\Z")
+
+    def test_a_bundle_without_a_claim_omits_the_block(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = self._bundle_with(root)
+            output = root / "output"
+            demo.run_demo(bundle, output)
             summary = json.loads(
                 (output / "restore-summary.json").read_text(encoding="utf-8")
             )
@@ -334,7 +357,7 @@ class EmbeddingStoreClaimTests(unittest.TestCase):
             )
             plain = root / "plain"
             claimed = root / "claimed"
-            demo.run_demo(BUNDLE, plain)
+            demo.run_demo(self._bundle_with(root / "bare"), plain)
             demo.run_demo(bundle, claimed)
             before = json.loads(
                 (plain / "restore-demo-result.json").read_text(encoding="utf-8")

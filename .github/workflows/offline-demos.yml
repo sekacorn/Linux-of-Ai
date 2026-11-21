@@ -87,6 +87,18 @@ jobs:
           scripts/create_vendor_exit_project.py
           scripts/verify_quickstart.py
 
+      # The exit-report demo glue imports the separately installed AI
+      # Infrastructure Suite, which this workflow does not install. Missing
+      # imports are ignored for these three files only; everything else above
+      # stays fully strict.
+      - name: Strict mypy (optional suite integration)
+        working-directory: linux-ai-repo
+        run: >-
+          mypy --strict --ignore-missing-imports
+          examples/restore-demo/scripts/exit_report_demo.py
+          examples/restore-demo/scripts/run_exit_report_demo.py
+          examples/restore-demo/scripts/test_exit_report_demo.py
+
       - name: Bandit
         working-directory: linux-ai-repo
         run: >-
