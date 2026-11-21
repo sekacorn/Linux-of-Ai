@@ -1,8 +1,8 @@
 # Three-profile restore demo design
 
-Status: Phase 2c implementation. The deterministic runner, profile records,
-summary contract, and explicit AI Infrastructure Suite verification mode are
-implemented. Per-vector corruption attribution remains the Phase 2d checkpoint.
+Status: Phase 2d implementation. The deterministic runner, profile records,
+summary contract, explicit AI Infrastructure Suite verification mode, and
+per-vector corruption attribution tests are implemented.
 
 During Phase 2, the Linux of AI workflow checks out OpenOntologyLite from the
 matching `feature/vendor-exit-evidence` branch so the demo and the JSON-LD
@@ -135,7 +135,13 @@ policy for keys and signers.
 
 ## Negative tests
 
-For each profile, tests will corrupt one restored asset after record creation. The runner must exit nonzero and name the profile and asset. Exit-report verification must detect the mismatch, downgrade that vector, and preserve the results of unaffected vectors. Tests also replace a profile adapter with another profile's adapter and supply a vector with the wrong dimension; both operations must fail loudly.
+For each profile, tests corrupt one restored asset after record creation.
+Exit-report verification detects the mismatch, downgrades only that vector,
+names the profile and asset in the reason, and preserves the verified results
+of unaffected vectors. A separate chained test corrupts the `mock-aws` export
+at hop 2 and requires the reason to identify that exact hop. Tests also replace
+a profile adapter with another profile's adapter and supply a vector with the
+wrong dimension; both operations fail loudly.
 
 Additional tests cover behavior drift with unchanged content, unsupported embeddings, duplicate JSON keys, oversized input, path traversal, links or Windows reparse points, deterministic repeated runs, fake-provider network isolation, and failure of live Ollama without fallback.
 
