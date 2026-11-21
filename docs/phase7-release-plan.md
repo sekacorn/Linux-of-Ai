@@ -88,6 +88,60 @@ Phase 3a. Its demo now declares a vector store in the restore bundle and
 carries derived evidence under `examples/restore-demo/evidence/`, which the
 existing merge step covers.
 
+## Dependabot merge order
+
+Approved order, per repository: merge `feature/vendor-exit-evidence`, publish,
+then merge Dependabot. The reason is not conflicts. Every open Dependabot
+branch touches only `.github/workflows/`, both feature branches touch only
+source, tests and docs, and merge tests in both directions are clean, so the
+order is free of conflicts either way. The reason is that these bumps modify
+`release.yml`, which is the Trusted Publishing workflow the publication order
+below depends on. Changing the publishing path in the same step that uses it
+removes the only evidence that the path works.
+
+The cost is carrying slightly older actions for one release. These are version
+bumps, not advisories, so that is the cheaper risk.
+
+Open Dependabot state as verified for this plan:
+
+| Repository | Open branches | Notes |
+|---|---:|---|
+| OpenOntologyLite | 1 | A grouped bump carrying 8 action updates in one commit, current with `main`. Cannot self-conflict. |
+| ModelSwapBench | 5 | `download-artifact`, `upload-artifact` and `scorecard-action` are current and mutually independent. `checkout-7.0.1` and `setup-python-7.0.0` are 10 commits behind `main` and conflict **with each other** across four workflows; each is clean against `main` alone, so whichever merges second conflicts. |
+
+Do not hand-resolve that conflict. Rebase the two stale branches, or let the
+grouping change below make the conflict impossible.
+
+After the ModelSwapBench release is published, enable `github_actions`
+grouping in its `.github/dependabot.yml`, matching what OpenOntologyLite
+already does, **as its own commit**. It must not be part of any release
+commit, version bump, or feature merge. Grouped action bumps arrive as one
+commit and cannot conflict with each other the way the two stale branches do.
+
+## release.yml provenance
+
+Verified for all four packages: `release.yml` is byte-identical between the
+commit of each package's last successful PyPI publish and both current `main`
+and `feature/vendor-exit-evidence`. No feature branch changes any file under
+`.github/`. The workflow about to be used for Phase 7 is the same one that
+last published successfully.
+
+| Package | Last published | Tag commit | Last successful `release.yml` run | `release.yml` since then |
+|---|---|---|---|---|
+| aiauditlog | 0.2.0b1 | `364cb0d` | `364cb0d`, success | unchanged |
+| openontologylite | 0.2.0b2 | `279f3b0` | `279f3b0`, success | unchanged |
+| modelswapbench | 0.1.0b1 | `59fec14` | `59fec14`, success | unchanged |
+| ai-infrastructure-suite | 0.1.0b1 | `4af0486` | `4af0486`, success | unchanged |
+
+Each PyPI release was confirmed present with its upload date, so a successful
+workflow run is matched by an actual published artifact rather than assumed.
+
+One historical note that the version plan already respects: an
+`openontologylite` 0.2.0b1 release run failed at `7102cc4` and that version is
+absent from PyPI. It is a burned version number. Publishing 0.2.0b3 next skips
+it correctly, and the release gate forbidding reuse of a failed or published
+version must keep 0.2.0b1 out of scope permanently.
+
 ## Publication order
 
 Every repository must pass its complete configured Python 3.11-3.13 CI before
