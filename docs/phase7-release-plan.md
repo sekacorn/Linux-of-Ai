@@ -497,6 +497,55 @@ maintenance may widen the exact CI test pin to the declared compatible range.
 The release-validation commit itself should retain the exact pin for
 reproducibility.
 
+## Post-release backlog
+
+Deliberately deferred. None of these is required for this release, and none
+should be done during it: each changes repository settings or CI configuration,
+which is exactly the churn the Dependabot ordering above exists to avoid
+during a publish. Each is its own commit or settings change afterwards.
+
+**1. Branch protection on the other five repositories.** Observed during the
+7-3 merges: only OpenOntologyLite had any protection on `main`. The other five
+had none, so their merges passed no enforced gate at all — they happened to be
+green, but nothing required it.
+
+| Repository | `main` protection at 7-3 |
+|---|---|
+| OpenOntologyLite | required checks, strict, conversation resolution |
+| AIAuditLog | none |
+| ModelSwapBench | none |
+| AgentForge | none |
+| Linux-of-Ai | none |
+| AI Infrastructure Suite | none |
+
+Apply OpenOntologyLite's shape to the other five: the repository's own
+per-version test contexts as required checks, `strict` so a branch must be up
+to date before merging, and **`required_approving_review_count: 0`**. Zero is
+deliberate and is not a weakening: GitHub forbids a pull request author from
+approving their own pull request, so on a single-maintainer project any
+non-zero count makes `main` unmergeable without an administrator bypass, and
+bypassing protection is forbidden by the release gates below. The required
+checks are what actually carry the enforcement. Revisit the review count if a
+second maintainer joins.
+
+OpenOntologyLite itself was changed from 1 to 0 during 7-3 for exactly this
+reason; its four required checks and `strict` mode were kept.
+
+**2. The pre-existing OpenSSF Scorecard failures on AIAuditLog.** Its
+`schedule`-triggered Scorecard runs have been failing against commit
+`364cb0d2` since at least 2026-09-22, well before this work. No run on the
+7-3 merge commit failed, so this is not a regression and did not block the
+release. Worth diagnosing separately, especially since the same workflow
+passes on OpenOntologyLite and ModelSwapBench, which suggests a repository
+setting or a missing permission rather than a code problem.
+
+**3. The tag-pattern narrowing and TestPyPI support**, both already described
+above: `v[0-9]*` in place of `v*` in the three tag-triggered workflows, and
+Option B for TestPyPI.
+
+**4. `github_actions` grouping in ModelSwapBench's `.github/dependabot.yml`**,
+as its own commit, as recorded in the Dependabot section.
+
 ## Release gates
 
 For every package release, verify the version, changelog, metadata, wheel,
