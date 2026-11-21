@@ -8,6 +8,10 @@ source -> mock-azure -> export -> mock-aws -> export -> local-ollama
 
 Every supported asset must preserve its digest, pass an asset-specific check, produce the expected scripted agent result, and survive re-export. The adapters deliberately use different tool-call envelopes, stop-reason fields, usage fields, and native embedding dimensions.
 
+Retrieval runs in the portable vector store over the copied eight-dimensional
+vectors. Provider-native embedding calls receive task text only and are a
+separate adapter-capability check; copied vectors are never passed to them.
+
 Run the offline demo:
 
 ```bash

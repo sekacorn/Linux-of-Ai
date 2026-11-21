@@ -216,7 +216,7 @@ class FakeBackend:
         raise RestoreError("Unknown fake provider profile")
 
     def embed(self, text: str) -> Record:
-        if not text:
+        if not isinstance(text, str) or not text:
             raise RestoreError("Native embedding input must not be empty")
         vector = [
             float(index + 1) / 10
@@ -381,6 +381,7 @@ class Adapter(Protocol):
 
 class AzureAdapter:
     profile = AZURE
+    portable_embedding_dimensions = (8,)
 
     def __init__(self, backend: ProviderBackend) -> None:
         self.backend = backend
@@ -439,6 +440,7 @@ class AzureAdapter:
 
 class AwsAdapter:
     profile = AWS
+    portable_embedding_dimensions = (8,)
 
     def __init__(self, backend: ProviderBackend) -> None:
         self.backend = backend
@@ -499,6 +501,7 @@ class AwsAdapter:
 
 class OllamaAdapter:
     profile = OLLAMA
+    portable_embedding_dimensions = (8,)
 
     def __init__(self, backend: ProviderBackend) -> None:
         self.backend = backend
@@ -619,7 +622,9 @@ def _check_costs(document: Record) -> str:
     return format(total, ".4f")
 
 
-def _check_embeddings(document: Record) -> tuple[str, str]:
+def _check_embeddings(
+    document: Record, supported_dimensions: tuple[int, ...]
+) -> tuple[str, str, int]:
     if (
         document.get("schema_version") != "portable-embeddings.v1"
         or document.get("model") != "portable-hash-v1"
@@ -630,6 +635,8 @@ def _check_embeddings(document: Record) -> tuple[str, str]:
     items = document.get("items")
     if not isinstance(dimension, int) or dimension <= 0 or not isinstance(items, list):
         raise RestoreError("Portable embedding dimension or items are invalid")
+    if dimension not in supported_dimensions:
+        raise RestoreError("Profile does not support the copied embedding dimension")
     best_id = ""
     best_score = -math.inf
     query = [1.0, *([0.0] * (dimension - 1))]
@@ -652,7 +659,7 @@ def _check_embeddings(document: Record) -> tuple[str, str]:
             best_id, best_score = item_id, score
     if best_id != "procedure-password-reset":
         raise RestoreError("Portable embedding retrieval changed")
-    return best_id, TRANSFER_LABEL
+    return best_id, TRANSFER_LABEL, dimension
 
 
 def _check_ontology(path: Path) -> str:
@@ -698,8 +705,16 @@ def run_behavior(bundle: Bundle, adapter: Adapter) -> Record:
         str(cast(Record, item).get("id")): str(cast(Record, item).get("text"))
         for item in memory_items
     }
-    retrieved_id, transfer = _check_embeddings(
-        parse_json(bundle.asset_bytes("embeddings"), "embeddings")
+    supported_dimensions = getattr(adapter, "portable_embedding_dimensions", ())
+    if not isinstance(supported_dimensions, tuple) or any(
+        not isinstance(value, int) for value in supported_dimensions
+    ):
+        raise RestoreError(
+            "Provider adapter has invalid portable embedding capabilities"
+        )
+    retrieved_id, transfer, copied_dimension = _check_embeddings(
+        parse_json(bundle.asset_bytes("embeddings"), "embeddings"),
+        supported_dimensions,
     )
     procedure = procedures.get(retrieved_id)
     if procedure is None or "never request or expose credentials" not in procedure:
@@ -736,8 +751,11 @@ def run_behavior(bundle: Bundle, adapter: Adapter) -> Record:
         "tool_usage": tool_usage,
         "final_usage": final_usage,
         "native_embedding_dimension": len(native),
+        "native_embedding_input": "task text only",
         "portable_embedding_transfer": transfer,
         "portable_embedding_model": "portable-hash-v1",
+        "portable_embedding_dimension": copied_dimension,
+        "retrieval_engine": "portable vector store",
         "retrieved_procedure": retrieved_id,
         "ontology_id": ontology_id,
         "audit_append_hash": audit_append_hash,
