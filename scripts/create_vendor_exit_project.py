@@ -9,10 +9,9 @@ import stat
 import sys
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_ROOT = REPOSITORY_ROOT / "quickstart" / "vendor-exit-template"
-PROJECT_NAME_TOKEN = "{{PROJECT_NAME}}"
+PROJECT_NAME_PLACEHOLDER = "{{PROJECT_NAME}}"
 
 
 class QuickstartError(RuntimeError):
@@ -101,7 +100,7 @@ def create_project(target_argument: Path, *, force: bool = False) -> Path:
     readme_path = target / "README.md"
     readme = readme_path.read_text(encoding="utf-8")
     readme_path.write_text(
-        readme.replace(PROJECT_NAME_TOKEN, _markdown_name(target.name)),
+        readme.replace(PROJECT_NAME_PLACEHOLDER, _markdown_name(target.name)),
         encoding="utf-8",
         newline="\n",
     )

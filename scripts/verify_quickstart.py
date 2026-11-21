@@ -6,12 +6,11 @@ import hashlib
 import json
 import os
 import re
-import subprocess
+import subprocess  # nosec B404
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
-
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = REPOSITORY_ROOT / "scripts" / "create_vendor_exit_project.py"
@@ -49,7 +48,8 @@ class VerificationError(RuntimeError):
 def _run(command: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
-    return subprocess.run(
+    # All callers supply the interpreter and arguments for the local fixture.
+    return subprocess.run(  # nosec B603
         command,
         cwd=cwd,
         env=environment,

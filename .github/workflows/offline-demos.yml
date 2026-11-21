@@ -1,0 +1,109 @@
+name: Offline demos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-demos:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out Linux of AI
+        uses: actions/checkout@v4
+        with:
+          path: linux-ai-repo
+
+      - name: Check out OpenOntologyLite
+        uses: actions/checkout@v4
+        with:
+          repository: sekacorn/OpenOntologyLite
+          # Phase 2 uses the matching contract branch. Phase 7 must install the
+          # pinned released package instead of following a Git branch.
+          ref: feature/vendor-exit-evidence
+          path: OpenOntologyLite
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: OpenOntologyLite/pyproject.toml
+
+      - name: Install verification tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./OpenOntologyLite
+          python -m pip install ruff mypy bandit
+
+      - name: Test vendor-exit demo
+        working-directory: linux-ai-repo
+        run: python -m unittest discover -s examples/vendor-exit-demo/scripts -p "test_*.py"
+
+      - name: Test restore demo
+        working-directory: linux-ai-repo
+        run: python -m unittest discover -s examples/restore-demo/scripts -p "test_*.py"
+
+      - name: Run offline demos
+        working-directory: linux-ai-repo
+        run: |
+          python examples/vendor-exit-demo/scripts/run_demo.py
+          python examples/restore-demo/scripts/run_restore_demo.py --output "${RUNNER_TEMP}/restore-output"
+          python examples/restore-demo/scripts/run_embedding_evidence.py --output "${RUNNER_TEMP}/embedding-evidence"
+
+      - name: Ruff
+        working-directory: linux-ai-repo
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Strict mypy
+        working-directory: linux-ai-repo
+        run: >-
+          mypy --strict
+          examples/vendor-exit-demo/scripts/run_demo.py
+          examples/vendor-exit-demo/scripts/test_run_demo.py
+          examples/restore-demo/scripts/restore_demo.py
+          examples/restore-demo/scripts/run_restore_demo.py
+          examples/restore-demo/scripts/test_restore_demo.py
+          examples/restore-demo/scripts/embedding_evidence.py
+          examples/restore-demo/scripts/run_embedding_evidence.py
+          examples/restore-demo/scripts/test_embedding_evidence.py
+          quickstart/vendor-exit-template/run.py
+          scripts/create_vendor_exit_project.py
+          scripts/verify_quickstart.py
+
+      # The exit-report demo glue imports the separately installed AI
+      # Infrastructure Suite, which this workflow does not install. Missing
+      # imports are ignored for these three files only; everything else above
+      # stays fully strict.
+      - name: Strict mypy (optional suite integration)
+        working-directory: linux-ai-repo
+        run: >-
+          mypy --strict --ignore-missing-imports
+          examples/restore-demo/scripts/exit_report_demo.py
+          examples/restore-demo/scripts/run_exit_report_demo.py
+          examples/restore-demo/scripts/test_exit_report_demo.py
+
+      - name: Bandit
+        working-directory: linux-ai-repo
+        run: >-
+          bandit -q -r
+          examples/vendor-exit-demo/scripts
+          examples/restore-demo/scripts
+          quickstart/vendor-exit-template
+          scripts

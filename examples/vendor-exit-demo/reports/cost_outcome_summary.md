@@ -11,6 +11,9 @@ This AIMeter OSS-style summary uses Decimal-based calculations in `scripts/run_d
 | Candidate quality score | 0.83 |
 | Quality retained | 90.22% |
 | Candidate latency change | 29.17% |
+| Minimum quality retention | 90.00% |
+| Minimum estimated cost reduction | 15.00% |
+| Maximum latency increase | 30.00% |
 
 Decision: Candidate acceptable with human review
 

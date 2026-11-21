@@ -5,10 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parent
 INPUT_DIR = ROOT / "input"
@@ -179,13 +178,13 @@ def _comparison(
         "baseline": baseline,
         "candidate": candidate,
         "quality_retained_pct": _percent(
-            (candidate_quality / baseline_quality) * Decimal("100")
+            (candidate_quality / baseline_quality) * Decimal(100)
         ),
         "estimated_cost_reduction_pct": _percent(
-            ((baseline_cost - candidate_cost) / baseline_cost) * Decimal("100")
+            ((baseline_cost - candidate_cost) / baseline_cost) * Decimal(100)
         ),
         "latency_change_pct": _percent(
-            ((candidate_latency - baseline_latency) / baseline_latency) * Decimal("100")
+            ((candidate_latency - baseline_latency) / baseline_latency) * Decimal(100)
         ),
         "thresholds": fixture.get("thresholds", {}),
         "decision": _clean_text(

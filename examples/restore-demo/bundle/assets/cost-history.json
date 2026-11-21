@@ -1,0 +1,14 @@
+{
+  "schema_version": "restore-cost-history.v1",
+  "currency": "USD",
+  "records": [
+    {
+      "id": "cost-001",
+      "estimated_cost": "0.0100"
+    },
+    {
+      "id": "cost-002",
+      "estimated_cost": "0.0150"
+    }
+  ]
+}

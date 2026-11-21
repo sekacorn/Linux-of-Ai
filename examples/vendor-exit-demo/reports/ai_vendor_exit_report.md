@@ -24,13 +24,15 @@ Estimated cost reduction: 91.20%
 
 Quality retained: 90.22%
 
+Thresholds: quality retained >= 90.00%, estimated cost reduction >= 15.00%, latency increase <= 30.00%
+
 Decision: Candidate acceptable with human review
 
 Recommended use: low-risk internal support workflows
 
 ## Governance Result
 
-The candidate is acceptable only for low-risk internal support workflows with human review. High-risk legal, medical, financial, security-sensitive, or external-facing use requires additional evaluation and escalation.
+Candidate acceptable with human review. High-risk legal, medical, financial, security-sensitive, or external-facing use requires additional evaluation and escalation.
 
 ## Ecosystem Evidence
 

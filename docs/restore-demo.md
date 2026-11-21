@@ -1,0 +1,198 @@
+# Three-profile restore demo design
+
+Status: Phase 2d implementation. The deterministic runner, profile records,
+summary contract, explicit AI Infrastructure Suite verification mode, and
+per-vector corruption attribution tests are implemented.
+
+During Phase 2, the Linux of AI workflow checks out OpenOntologyLite from the
+matching `feature/vendor-exit-evidence` branch so the demo and the JSON-LD
+round-trip contract are tested together. Phase 7 must replace that branch
+checkout with installation of an exact released OpenOntologyLite version. The
+release dependency must be pinned rather than following a mutable Git ref.
+
+## Purpose
+
+The restore demo will show whether a portable, local vendor-exit bundle can be restored into three provider-shaped profiles without changing the bundle's governed behavior. It is an offline portability test, not proof that a real cloud migration, disaster-recovery process, or provider contract will behave the same way.
+
+The demo runs both a fan-out and a chained migration. In the fan-out, the source bundle is restored independently into each profile, so a successful earlier run cannot hide an incomplete later restore. The chain is `source -> mock-azure -> export -> mock-aws -> export -> local-ollama`; it applies the content and behavior gates at every hop and compares every re-export with the original bundle.
+
+## Provider profiles
+
+| Profile | Default execution | Network behavior | Intended boundary |
+|---|---|---|---|
+| `mock-azure` | Deterministic fake Azure-shaped provider | No network access | Exercises provider-specific configuration and response normalization without Azure credentials or services. |
+| `mock-aws` | Deterministic fake AWS-shaped provider | No network access | Exercises a distinct provider adapter and response envelope without AWS credentials or services. |
+| `local-ollama` | Deterministic fake Ollama-shaped provider | No network access | Exercises local-provider configuration and normalized behavior. A real local Ollama request is allowed only with `--live-ollama`. |
+
+The two hosted-shaped profiles never contact hosted services. `--live-ollama` is explicit, is outside the deterministic CI matrix, and may contact only the configured local Ollama endpoint. A live run records that it is live and never masquerades as a fake-provider result.
+
+## Portable bundle
+
+The demo will use a versioned, deterministic bundle under `examples/restore-demo/`. The bundle manifest will list every asset, its schema or media type, its relative path, and its SHA-256 digest. Paths are project-relative; absolute paths, traversal, links, duplicate JSON keys, oversized files, and undeclared files are rejected.
+
+The bundle contains no credentials, provider tokens, personal identity, or live customer data. JSON and JSONL use stable key ordering and LF line endings. Generated records omit wall-clock timestamps or use a fixed fixture time so repeated fake-provider runs produce identical bytes.
+
+## Assets and profile support
+
+| Asset | `mock-azure` | `mock-aws` | `local-ollama` fake | Restore-specific check |
+|---|---|---|---|---|
+| Policies | Move | Move | Move | The restored policy routes the scripted low-risk task to a draft with human review and blocks a high-risk variant. |
+| Prompts | Move | Move | Move | The restored prompt is the prompt used for the scripted task. |
+| Memory | Move | Move | Move | The restored memory returns the expected support procedure used by the task. |
+| Audit history | Move | Move | Move | Existing events retain order and chain validity; the task adds the expected correlated event. |
+| Cost history | Move | Move | Move | Existing records retain their exact decimal values; the task produces the profile's declared deterministic usage record. |
+| Ontology | Move | Move | Move | OpenOntologyLite loads and round-trips the JSON-LD export without changing its canonical ontology digest, and the task resolves the expected workload concept. |
+| Embeddings | Move when the portable vector store supports the declared model and dimension | Move when the portable vector store supports the declared model and dimension | Move for the fake profile; live support depends on the configured vector store | Retrieval returns the expected memory item with deterministic tie ordering. Results are labeled `vectors copied (same model), not re-embedded`. Unsupported live embeddings are reported as unsupported, never silently regenerated or called restored. |
+
+Fine-tunes, tool connectors, identities, and contract terms are outside this restore demo. Their existing exit-report rows remain governed by their current evidence contracts.
+
+## Definition of restored
+
+An asset is restored only when both gates pass:
+
+1. **Content gate:** the bytes restored into the target profile match the declared SHA-256, or, for a normalized format such as ontology JSON-LD, the canonical content digest matches after load and serialization.
+2. **Behavior gate:** the restored profile runs the common scripted agent task and returns the exact expected normalized result. The run also performs the asset-specific assertion in the table above.
+
+The common scripted task is a fictional, low-risk internal password-reset support request. Its normalized expected result is a versioned JSON object containing the expected action, human-review requirement, policy decision, retrieved procedure identifier, and final response identifier. Fake providers must use different provider-shaped request and response envelopes. Their tool-call format, stop-reason shape, token counting fields, and native embedding dimensions are distinct, but normalization must produce the same expected result. A provider adapter that is bypassed or paired with the wrong profile must fail.
+
+Portable vectors are not generated by those native embedding APIs. They retain one declared model, dimension, and byte representation through every hop. This proves copying and portable vector-store compatibility, not re-embedding or semantic equivalence between provider embedding models. A copied vector whose length differs from its declared dimension fails the content/behavior gates.
+
+Retrieval runs inside the demo's portable vector store over the copied
+`portable-hash-v1` vectors. It does not pass those vectors to a provider-native
+embedder. The separate native embedding call receives only the scripted task
+text and checks the adapter's declared 4-, 6-, or 8-dimensional response. The
+portable store currently declares dimension 8 support for all three fake
+profiles; a profile that does not declare that copied dimension fails before
+retrieval rather than silently sending the vectors to its native embedder.
+
+A content match without the behavior gate is not restored. A behavioral match produced from undeclared or mismatched content is not restored. A profile passes only when every supported required asset passes both gates.
+
+## Demo flow
+
+The proposed command is:
+
+```text
+python examples/restore-demo/run_restore_demo.py --output PATH
+```
+
+The runner will:
+
+1. Validate the portable bundle and all declared digests before constructing a provider.
+2. Create an empty profile-specific restore directory.
+3. Restore only declared assets with bounded, non-linking file operations.
+4. validate the restored content independently of the source validation.
+5. Construct the profile's deterministic fake provider and agent.
+6. Run the common scripted task and asset-specific checks.
+7. Re-export the restored assets and compare their digests with the input bundle.
+8. Repeat independently for fan-out and in order for the chained migration.
+9. Write one profile restore record and a deterministic aggregate restore record.
+10. Exit nonzero if any required content, behavior, or re-export check fails.
+
+`--live-ollama` changes only the `local-ollama` provider. It requires explicit endpoint and model configuration, records the endpoint hosting mode, applies finite connect/read timeouts, and never falls back silently to the fake after a live failure.
+
+## Restore record contract
+
+Each profile emits `restore-profile-record.v1` with:
+
+- profile and provider mode (`fake` or `live`)
+- bundle schema version and bundle digest
+- runner version and reproducibility settings
+- supported, unsupported, passed, and failed assets
+- for each asset: declared digest, restored digest, content result, behavior result, and failure reason
+- scripted task ID, expected-result digest, actual-result digest, and behavior result
+- aggregate pass/fail status
+- deterministic record digest
+- machine sign-off stating that the runner completed every declared check
+
+The machine sign-off is integrity metadata, not a person, legal signature, certificate, or external attestation. It contains no personal identity. The three profile records are referenced by `restore-summary.v1`, which also has a deterministic digest and is the artifact consumed by `ai-suite exit-report`.
+
+## Embedding portability evidence
+
+The bundle's `assets/embeddings.json` declares the vector store those copied
+vectors belong to, as `store_id` plus `store_evidence_sha256`. The runner
+relays the pair into the restore summary's `embedding_stores` block, so a
+verified restore of this bundle can be tied to one specific
+`embedding-portability.v1` document. The two fields are required together: a
+store name with no digest would name a claim without binding it to content.
+
+`evidence/embedding-portability.json` is that document. It is derived from the
+bundle rather than hand-written: `assets/embeddings.json` supplies one vector
+per record and `assets/memory.json` supplies the source text those vectors
+were produced from. Regenerate it with:
+
+```console
+python examples/restore-demo/scripts/run_embedding_evidence.py
+```
+
+Generation is deterministic, and a test compares a fresh generation against
+every committed byte, so the checked-in evidence cannot drift. The evidence
+references only its own vector and source files; it never contains a digest of
+the bundle manifest or of a restore summary. That direction matters, because
+the restore summary commits to the evidence digest — evidence committing back
+would leave neither document reproducible.
+
+The declared model is `portable-hash-v1`, a deterministic local function in
+this repository, so it is self-hostable by construction and Apache-2.0. It has
+no weight file, so no `weights_sha256` is declared and the report states that
+the weights are not pinned and re-embedding may not reproduce identical
+vectors.
+
+To see the whole chain reach a lock-in score of 0, with a separately installed
+AI Infrastructure Suite:
+
+```console
+python examples/restore-demo/scripts/run_exit_report_demo.py --output /tmp/exit-report-demo
+```
+
+That runs the restore demo, places the inventory beside its output, writes the
+`exit-manifest.v1` referencing both, and renders the verified report. Without
+the suite installed it explains what is missing and exits non-zero.
+
+## Exit-report verification model
+
+An operator-supplied `restore-summary.v1` whose outer digest matches remains `attested`. A producer string inside the record is not trusted.
+
+`ai-suite exit-report` will gain an explicit restore verification mode. During that invocation it will validate the bundle, reconstruct each fake profile in a temporary directory, rerun the scripted task and asset checks, and compare its results with the referenced records. Only asset rows successfully rechecked by the scanner become `verified (fake profiles)` with the `restore_tested` score.
+
+The existing `exit-manifest.v1` behavior remains compatible. Restore evidence uses `state: restore_tested`; the vector name selects the corresponding asset row from the summary. Ontology restore evidence receives the same content and behavioral checks rather than relying only on its current importer check. Contract terms remain `attested` and are not affected by restore verification.
+
+If verification is not requested or the scanner cannot run the verifier, a valid record remains `attested`. The report states why it was not independently checked.
+
+If the scanner runs the verifier and detects corruption or behavior drift, the affected vector is reported as a verified restore failure with a conservative lock-in score and a specific reason. It is not silently converted into success, and unaffected vectors retain their own results.
+
+## What verified means
+
+`verified (fake profiles)` means the scanner independently rebuilt the
+deterministic fake profiles, reran the documented content and behavior checks,
+and found the supplied records internally consistent with those results. It is
+evidence that this offline restore procedure is reproducible against the fake
+profiles.
+
+It is **not** proof that a supplied record is authentic, that its producer is
+who it claims to be, or that its provenance is trustworthy. The current
+records use deterministic digests for correlation and integrity checking, not
+cryptographic identity. Optional signing and external provenance verification
+are future work; a signature would still require an operator-defined trust
+policy for keys and signers.
+
+## Negative tests
+
+For each profile, tests corrupt one restored asset after record creation.
+Exit-report verification detects the mismatch, downgrades only that vector,
+names the profile and asset in the reason, and preserves the verified results
+of unaffected vectors. A separate chained test corrupts the `mock-aws` export
+at hop 2 and requires the reason to identify that exact hop. Tests also replace
+a profile adapter with another profile's adapter and supply a vector with the
+wrong dimension; both operations fail loudly.
+
+Additional tests cover behavior drift with unchanged content, unsupported embeddings, duplicate JSON keys, oversized input, path traversal, links or Windows reparse points, deterministic repeated runs, fake-provider network isolation, and failure of live Ollama without fallback.
+
+## Verification plan
+
+The fake-provider demo and its tests run on Python 3.11, 3.12, and 3.13. Required checks are Ruff lint, Ruff formatting, strict mypy, Bandit, the existing package tests, the umbrella quickstart checks, repeated-run byte comparison, and artifact safety scans.
+
+Live Ollama is optional manual evidence. It is never required for CI and is reported separately from the deterministic fake-provider matrix.
+
+## Non-goals
+
+This phase does not claim a real Azure or AWS integration, cloud restore, legal portability, provider equivalence, production disaster recovery, cryptographic signer identity, or deterministic live-model output. It does not change package versions, publish packages, or contact PyPI.

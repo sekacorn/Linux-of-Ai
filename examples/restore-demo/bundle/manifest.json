@@ -1,0 +1,37 @@
+{
+  "schema_version": "restore-bundle.v1",
+  "assets": {
+    "audit_history": {
+      "path": "assets/audit-history.jsonl",
+      "sha256": "8eb445d9788cfe8a5222d47eb63622a6f0a4c7c936983a3c8a387aef770db966"
+    },
+    "cost_history": {
+      "path": "assets/cost-history.json",
+      "sha256": "44b1603f05859e4fa7863c29cce6afbf4ae410588fee988a0de3710144b380af"
+    },
+    "embeddings": {
+      "path": "assets/embeddings.json",
+      "sha256": "61fb1bc72ce6436369c76788318e5703d3bf5f715bd699d5fb5377ee8e1d36f6"
+    },
+    "memory": {
+      "path": "assets/memory.json",
+      "sha256": "57ff5fcf0bf83ef8e7eb608fe0b4e6e7f419a7b38a12e8c97a23b83b1415a690"
+    },
+    "ontology": {
+      "path": "assets/ontology.jsonld",
+      "sha256": "c7d61c515d18148671c22590399907441a48cf567f9e0c8e95b5f26a2fac7201"
+    },
+    "policies": {
+      "path": "assets/policies.json",
+      "sha256": "8a410ca608c2280b0e30b4bc566f0f72739ad5eb3ac9f214b93852b3e1ef23fd"
+    },
+    "prompts": {
+      "path": "assets/prompt.txt",
+      "sha256": "cca78928b162d0baad7cd44f099a65f58ce3691061598a85d97c06996f7dfffe"
+    }
+  },
+  "task": {
+    "path": "task.json",
+    "sha256": "39823e8d12a93ce2f9361b4fdba23969136e71f4bac1aa494f1524f85f8c4a0d"
+  }
+}

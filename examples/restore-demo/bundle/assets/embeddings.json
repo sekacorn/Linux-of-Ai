@@ -1,0 +1,36 @@
+{
+  "schema_version": "portable-embeddings.v1",
+  "model": "portable-hash-v1",
+  "dimension": 8,
+  "transfer": "vectors copied (same model), not re-embedded",
+  "store_id": "support-memory",
+  "store_evidence_sha256": "312020e4f554b3f4e89dc6191efc76959417c5c6c5a6346e1068453304c8b100",
+  "items": [
+    {
+      "id": "procedure-password-reset",
+      "vector": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "procedure-billing-review",
+      "vector": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

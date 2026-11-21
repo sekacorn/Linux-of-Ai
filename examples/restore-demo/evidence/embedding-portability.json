@@ -1,0 +1,47 @@
+{
+  "schema_version": "embedding-portability.v1",
+  "stores": [
+    {
+      "embedding_model": {
+        "availability": "open_weight_self_hostable",
+        "availability_verification": "attested",
+        "dimensions": 8,
+        "id": "portable-hash-v1",
+        "license": "Apache-2.0",
+        "revision": "1"
+      },
+      "store_id": "support-memory",
+      "vectors": {
+        "layout": "single_file",
+        "records": [
+          {
+            "record_id": "procedure-billing-review",
+            "source_text": {
+              "path": "sources/procedure-billing-review.txt",
+              "sha256": "16654c6371e02ec8a400ec4f34ad4d47a78ec496d6bc085395d10dd1da146169",
+              "status": "retained"
+            },
+            "source_text_sha256_in_vector_record": "16654c6371e02ec8a400ec4f34ad4d47a78ec496d6bc085395d10dd1da146169",
+            "vector": {
+              "path": "vectors/procedure-billing-review.json",
+              "sha256": "62136282ab0dc740e5672cf0153c170050735494e14b6b285bef8dc418c6c148"
+            }
+          },
+          {
+            "record_id": "procedure-password-reset",
+            "source_text": {
+              "path": "sources/procedure-password-reset.txt",
+              "sha256": "4837aede2c9709b630c2a43b6f20a9851ab356fa0dd505d57272db032b003367",
+              "status": "retained"
+            },
+            "source_text_sha256_in_vector_record": "4837aede2c9709b630c2a43b6f20a9851ab356fa0dd505d57272db032b003367",
+            "vector": {
+              "path": "vectors/procedure-password-reset.json",
+              "sha256": "3f77bff0d8af034367711a44f87b967c8f4f5811392d56aa062d4ebc21599e73"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
