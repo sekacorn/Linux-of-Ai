@@ -142,6 +142,136 @@ absent from PyPI. It is a burned version number. Publishing 0.2.0b3 next skips
 it correctly, and the release gate forbidding reuse of a failed or published
 version must keep 0.2.0b1 out of scope permanently.
 
+## Release triggers and accident surface
+
+Audited at checkpoint 7-1 by reading each `release.yml` and querying each
+repository's GitHub environments. The four repositories are **not** symmetric.
+
+| Repository | Trigger | Tag push publishes? | Gate before upload |
+|---|---|---|---|
+| AIAuditLog | `on: push: tags: ["v*"]` | **Yes** | tag/version equality check only |
+| OpenOntologyLite | `on: push: tags: ["v*"]` | **Yes** | tag/version equality check only |
+| ModelSwapBench | `on: push: tags: ["v*"]` | **Yes** | tag/version equality check only |
+| AI Infrastructure Suite | `on: workflow_dispatch` (`tag` input) | No | manual dispatch, then tag/version equality check |
+
+Every repository gates its publish job on the `pypi` GitHub environment. **No
+`pypi` environment in any of the four carries a protection rule**: no required
+reviewers, no wait timer, no deployment branch policy. This was queried
+directly. The AI Infrastructure Suite workflow's own header comment says the
+environment "should carry required reviewers" — it does not.
+
+The consequence is blunt: in three of the four repositories, **pushing a `v*`
+tag publishes to PyPI with no further human step.** The suite is protected only
+because a tag push cannot start its workflow at all.
+
+Things that could publish by accident:
+
+1. **Pushing the version tag early.** The versions are already bumped locally,
+   so a tag matching the new version passes the equality check and publishes
+   immediately in three repositories. This is the main risk and the reason
+   tagging stays a separate, explicitly approved step.
+2. **`git push --tags` or `git push --follow-tags`.** These push tags the
+   remote does not have. ModelSwapBench currently has one local-only tag,
+   `v0.1.0a1`; it would fail the equality check against `0.1.0b2`, so it would
+   produce a failed run rather than a publish, but it would also consume the
+   already-published `0.1.0a1` version number in the run history. Push tags
+   one at a time by name.
+3. **The `v*` pattern is broader than a version.** Any tag beginning with `v`
+   starts the workflow. A non-version tag fails the equality check, so it
+   cannot publish, but it does start a run.
+4. **A merge cannot publish.** No workflow triggers on `push` to a branch, so
+   merging the feature branch is safe on its own.
+
+Recommended hardening, not required for this release and not performed:
+add required reviewers to each `pypi` environment, and narrow the tag pattern
+to `v[0-9]*`. Both are repository settings rather than code.
+
+## Checkpoint 7-1: local preparation
+
+Completed locally. No tag, push, publish, or registry contact beyond read-only
+public metadata queries.
+
+| Package | From | To | Distributions | `twine check` |
+|---|---|---|---|---|
+| aiauditlog | 0.2.0b1 | 0.2.0b2 | wheel + sdist | pass |
+| openontologylite | 0.2.0b2 | 0.2.0b3 | wheel + sdist | pass |
+| modelswapbench | 0.1.0b1 | 0.1.0b2 | wheel + sdist | pass |
+| ai-infrastructure-suite | 0.1.0b1 | 0.1.0b2 | wheel + sdist | pass |
+
+All four were installed at those exact versions into a fresh virtual
+environment outside every checkout, from the local wheels only. None of those
+versions exists on PyPI, so the installed artifacts are provably the local
+ones. From that environment, the restore demo and the vendor-exit demo both
+pass, and `ai-suite exit-report --verify-restores` reports the embeddings
+vector at **0**, `verified (local evidence + fake profiles)`, with all six fake
+profiles passing and `suite_version: 0.1.0b2`.
+
+The suite's artifact scanner reports
+`name=ai-infrastructure-suite version=0.1.0b2 author=sekacorn license=Apache-2.0 python=<3.14,>=3.11 script=ai-suite`.
+
+### The openontologylite floor is deferred, deliberately
+
+The suite's `openontologylite` floor was **not** raised to `>=0.2.0b3` at 7-1.
+It cannot be, truthfully, before that version is published. Raising it forces a
+chain through the suite's own packaged manifest:
+
+1. `test_manifest_ranges_match_requirements` requires the manifest's
+   `version_specifier` to equal a `pyproject.toml` requirement, so the manifest
+   range must move to `>=0.2.0b3,<0.3.0` too.
+2. `test_range_admits_the_declared_minimum` then forces
+   `minimum_version` to `0.2.0b3`.
+3. `test_minimum_never_exceeds_latest_published` then forces
+   `latest_published_version` to `0.2.0b3` — a statement that the version is on
+   PyPI, which is false until step 3 of the publication order runs.
+4. `test_every_range_admits_its_latest_published_version` fails meanwhile,
+   because a `>=0.2.0b3` range excludes the published `0.2.0b2`.
+
+Those tests are correct and must not be weakened. The honest sequence is
+therefore the one the publication order below already implies: publish
+`openontologylite==0.2.0b3` first, then raise the floor and the three manifest
+fields in **one commit**, re-run the full matrix, and only then build and
+publish the suite. That commit is listed as step 4a below.
+
+The same deferral applies to the `aiauditlog` and `modelswapbench` floors
+listed under required dependency changes. Those two are hygiene rather than
+correctness: the suite works against the currently published versions of both.
+Raising them is optional and was not requested at 7-1.
+
+## Checkpoint 7-2: TestPyPI is not currently possible
+
+Verified at 7-1: **no release workflow supports TestPyPI**. None of the four
+contains a `repository-url`, a `repository_url`, or any reference to
+`test.pypi.org`; every publish step targets PyPI implicitly. And none of the
+four distributions exists on TestPyPI at all, so no pending publisher can have
+been registered there. TestPyPI is a separate registry with its own accounts
+and its own Trusted Publishing configuration; a PyPI publisher does not apply
+to it.
+
+So 7-2 requires a decision before it can be a step at all:
+
+- **Option A — skip TestPyPI.** Rely on the suite's existing post-publish
+  verification, which installs the exact published wheel and sdist from PyPI
+  into clean environments and smoke-tests both before the run is considered
+  successful. Cost: a defective artifact is permanent, because a PyPI version
+  can never be re-uploaded. Cheapest, and the local wheel install at 7-1
+  already exercised the same install path.
+- **Option B — add TestPyPI support.** Add a `workflow_dispatch` input to each
+  `release.yml` selecting the target registry, pass it as `repository-url`, and
+  register four pending publishers at `test.pypi.org` under the same owner,
+  repository, workflow filename and environment. Cost: a workflow change to
+  all four repositories immediately before a release, which is exactly the
+  release-path churn the Dependabot ordering above exists to avoid, plus
+  four manual account setup steps. Highest confidence, highest churn.
+- **Option C — upload to TestPyPI manually** with a TestPyPI API token. This
+  contradicts the "no API token is used or referenced anywhere" property the
+  workflows document, and reintroduces a long-lived credential. Not
+  recommended.
+
+**Recommendation: Option A for this release**, with Option B scheduled as its
+own post-release change alongside the Dependabot merges, so the next release
+gets a real TestPyPI rehearsal without changing the publishing path during a
+publish.
+
 ## Publication order
 
 Every repository must pass its complete configured Python 3.11-3.13 CI before
@@ -163,6 +293,105 @@ OIDC workflow; no API token or manual artifact upload is part of this plan.
 Release steps 2-4 are independent at runtime, but the fixed sequence makes the
 evidence trail and rollback point unambiguous. AI Infrastructure Suite remains
 last among packages because it consumes all three releases.
+
+## Checkpoint 7-3: exact command sequence
+
+Each numbered block is a separate approval. Nothing below has been run. In
+three of the four repositories the `git push origin <tag>` line is the
+irreversible step: it publishes, with no further gate. A published version can
+never be re-uploaded.
+
+**0. Merge the feature branches (no publish possible).**
+
+```bash
+# Per repository. Branch protection may require a PR instead of a direct push.
+git -C <repo> push origin feature/vendor-exit-evidence
+gh pr create --repo sekacorn/<repo> --base main --head feature/vendor-exit-evidence --fill
+# After review and green CI:
+gh pr merge --repo sekacorn/<repo> --merge
+```
+
+Repositories, in order: `AgentForge` (merge only, no release), `AIAuditLog`,
+`OpenOntologyLite`, `ModelSwapBench`, `AI-Infrastructure-Suite`.
+
+**1. Confirm CI is green on `main` before any tag.**
+
+```bash
+gh run list --repo sekacorn/<repo> --branch main --limit 5
+```
+
+**2. Publish `aiauditlog==0.2.0b2`.** The tag push publishes.
+
+```bash
+git -C AIAuditLog fetch origin
+git -C AIAuditLog tag v0.2.0b2 origin/main
+git -C AIAuditLog push origin v0.2.0b2
+gh run watch --repo sekacorn/AIAuditLog
+```
+
+**3. Publish `openontologylite==0.2.0b3`.** The tag push publishes.
+
+```bash
+git -C OpenOntologyLite fetch origin
+git -C OpenOntologyLite tag v0.2.0b3 origin/main
+git -C OpenOntologyLite push origin v0.2.0b3
+gh run watch --repo sekacorn/OpenOntologyLite
+# Confirm the artifact actually landed before continuing:
+curl -s https://pypi.org/pypi/openontologylite/json | python -c "import json,sys; print(json.load(sys.stdin)['info']['version'])"
+```
+
+**4. Publish `modelswapbench==0.1.0b2`.** The tag push publishes.
+
+```bash
+git -C ModelSwapBench fetch origin
+git -C ModelSwapBench tag v0.1.0b2 origin/main
+git -C ModelSwapBench push origin v0.1.0b2
+gh run watch --repo sekacorn/ModelSwapBench
+```
+
+**4a. Raise the suite's dependency floor — only now that 0.2.0b3 is on PyPI.**
+A separate commit, merged and verified before the suite is tagged. See the
+deferral section above for why this cannot happen earlier.
+
+```bash
+# In AI-Infrastructure-Suite, in one commit:
+#   pyproject.toml           openontologylite>=0.2.0b2  ->  >=0.2.0b3   (3 places)
+#   ecosystem-manifest.json  openontologylite version_specifier, minimum_version,
+#                            latest_published_version -> 0.2.0b3
+# Then, on 3.11, 3.12 and 3.13:
+python -m pytest && python -m ruff check . && python -m ruff format --check . \
+  && python -m mypy && python -m bandit -c pyproject.toml -r src
+```
+
+**5. Publish `ai-infrastructure-suite==0.1.0b2`.** The tag push does **not**
+publish here; the dispatch does.
+
+```bash
+git -C AI-Infrastructure-Suite fetch origin
+git -C AI-Infrastructure-Suite tag v0.1.0b2 origin/main
+git -C AI-Infrastructure-Suite push origin v0.1.0b2        # safe: no trigger
+gh workflow run release.yml --repo sekacorn/AI-Infrastructure-Suite -f tag=v0.1.0b2
+gh run watch --repo sekacorn/AI-Infrastructure-Suite
+```
+
+**6. Switch the umbrella CI off the feature-branch checkout.** See the CI
+reference switch section. No publication step.
+
+**7. Post-release, each as its own commit:** the Dependabot merges in the order
+recorded above, then `github_actions` grouping in ModelSwapBench's
+`.github/dependabot.yml`, then optionally TestPyPI support (Option B).
+
+### Rollback
+
+A published version cannot be replaced. If an artifact is wrong after upload,
+the only forward path is to yank it on PyPI and publish the next pre-release
+number; the burned number is never reused. If a tag was pushed but the run
+failed before upload, delete the remote tag, fix, and re-tag the corrected
+commit with a **new** version:
+
+```bash
+git -C <repo> push origin :refs/tags/<tag>   # only safe while nothing was uploaded
+```
 
 ## Required version and dependency changes
 
