@@ -63,6 +63,7 @@ jobs:
         run: |
           python examples/vendor-exit-demo/scripts/run_demo.py
           python examples/restore-demo/scripts/run_restore_demo.py --output "${RUNNER_TEMP}/restore-output"
+          python examples/restore-demo/scripts/run_embedding_evidence.py --output "${RUNNER_TEMP}/embedding-evidence"
 
       - name: Ruff
         working-directory: linux-ai-repo
@@ -79,6 +80,9 @@ jobs:
           examples/restore-demo/scripts/restore_demo.py
           examples/restore-demo/scripts/run_restore_demo.py
           examples/restore-demo/scripts/test_restore_demo.py
+          examples/restore-demo/scripts/embedding_evidence.py
+          examples/restore-demo/scripts/run_embedding_evidence.py
+          examples/restore-demo/scripts/test_embedding_evidence.py
           quickstart/vendor-exit-template/run.py
           scripts/create_vendor_exit_project.py
           scripts/verify_quickstart.py
