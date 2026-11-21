@@ -18,7 +18,7 @@ Run the offline demo:
 python examples/restore-demo/scripts/run_restore_demo.py --output restore-output
 ```
 
-The output directory must not already exist. No provider credentials or network access are used. The result labels portable embeddings as `vectors copied (same model), not re-embedded`.
+The output directory must not already exist. No provider credentials or network access are used. The result labels portable embeddings as `vectors copied (same model), not re-embedded`. The demo writes six `restore-profile-record.v1` files and a `restore-summary.v1` that references every fan-out and chained record by relative path and SHA-256.
 
 An optional live Ollama check requires deliberate opt-in and never falls back to the fake provider:
 

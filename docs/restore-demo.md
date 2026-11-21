@@ -1,6 +1,14 @@
 # Three-profile restore demo design
 
-Status: Phase 2a design proposal. No restore runner or exit-report verification is implemented yet.
+Status: Phase 2c implementation. The deterministic runner, profile records,
+summary contract, and explicit AI Infrastructure Suite verification mode are
+implemented. Per-vector corruption attribution remains the Phase 2d checkpoint.
+
+During Phase 2, the Linux of AI workflow checks out OpenOntologyLite from the
+matching `feature/vendor-exit-evidence` branch so the demo and the JSON-LD
+round-trip contract are tested together. Phase 7 must replace that branch
+checkout with installation of an exact released OpenOntologyLite version. The
+release dependency must be pinned rather than following a mutable Git ref.
 
 ## Purpose
 
@@ -109,6 +117,21 @@ The existing `exit-manifest.v1` behavior remains compatible. Restore evidence us
 If verification is not requested or the scanner cannot run the verifier, a valid record remains `attested`. The report states why it was not independently checked.
 
 If the scanner runs the verifier and detects corruption or behavior drift, the affected vector is reported as a verified restore failure with a conservative lock-in score and a specific reason. It is not silently converted into success, and unaffected vectors retain their own results.
+
+## What verified means
+
+`verified (fake profiles)` means the scanner independently rebuilt the
+deterministic fake profiles, reran the documented content and behavior checks,
+and found the supplied records internally consistent with those results. It is
+evidence that this offline restore procedure is reproducible against the fake
+profiles.
+
+It is **not** proof that a supplied record is authentic, that its producer is
+who it claims to be, or that its provenance is trustworthy. The current
+records use deterministic digests for correlation and integrity checking, not
+cryptographic identity. Optional signing and external provenance verification
+are future work; a signature would still require an operator-defined trust
+policy for keys and signers.
 
 ## Negative tests
 

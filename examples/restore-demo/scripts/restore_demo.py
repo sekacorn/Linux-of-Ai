@@ -834,6 +834,61 @@ def migrate_once(
     )
 
 
+def _write_json(path: Path, document: Record) -> bytes:
+    data = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return data
+
+
+def _write_profile_record(
+    output: Path,
+    record_path: PurePosixPath,
+    *,
+    run_kind: str,
+    hop_index: int,
+    profile: Profile,
+    input_path: PurePosixPath,
+    migration_path: PurePosixPath,
+    migration: Record,
+    source_digest: str,
+) -> Record:
+    document: Record = {
+        "schema_version": "restore-profile-record.v1",
+        "run_kind": run_kind,
+        "hop_index": hop_index,
+        "profile": profile.name,
+        "provider_mode": migration["provider_mode"],
+        "source_bundle_sha256": source_digest,
+        "input_bundle": {
+            "path": str(input_path),
+            "sha256": migration["input_bundle_sha256"],
+        },
+        "restored_bundle": {
+            "path": str(migration_path / "restored"),
+            "sha256": migration["output_bundle_sha256"],
+        },
+        "exported_bundle": {
+            "path": str(migration_path / "exported"),
+            "sha256": migration["output_bundle_sha256"],
+        },
+        "migration": migration,
+        "machine_signoff": {
+            "producer": "linux-ai-restore-demo",
+            "status": "passed",
+            "checks": ["content", "behavior", "re-export"],
+            "identity_claim": "none",
+        },
+    }
+    data = _write_json(output.joinpath(*record_path.parts), document)
+    return {
+        "profile": profile.name,
+        "hop_index": hop_index,
+        "path": str(record_path),
+        "sha256": sha256(data),
+    }
+
+
 def run_demo(
     bundle_root: Path,
     output: Path,
@@ -844,33 +899,84 @@ def run_demo(
 ) -> Record:
     if output.exists():
         raise RestoreError("Output directory already exists")
-    original = Bundle.load(bundle_root)
+    external_source = Bundle.load(bundle_root)
     output.mkdir(parents=True)
+    source_path = PurePosixPath("evidence/source-bundle")
+    original = _write_bundle(external_source, output.joinpath(*source_path.parts))
     fanout: list[Record] = []
+    fanout_records: list[Record] = []
     for profile in PROFILES:
+        migration_path = PurePosixPath("fanout") / profile.name
         result, _ = migrate_once(
             original,
             original,
             profile,
-            output / "fanout" / profile.name,
+            output.joinpath(*migration_path.parts),
             live_ollama=live_ollama,
             ollama_endpoint=ollama_endpoint,
             ollama_model=ollama_model,
         )
         fanout.append(result)
+        record_path = PurePosixPath("records/fanout") / f"{profile.name}.json"
+        fanout_records.append(
+            _write_profile_record(
+                output,
+                record_path,
+                run_kind="fanout",
+                hop_index=0,
+                profile=profile,
+                input_path=source_path,
+                migration_path=migration_path,
+                migration=result,
+                source_digest=original.bundle_digest,
+            )
+        )
     chain: list[Record] = []
+    chain_records: list[Record] = []
     current = original
+    current_path = source_path
     for index, profile in enumerate(PROFILES, start=1):
+        migration_path = PurePosixPath("chain") / f"{index:02d}-{profile.name}"
         result, current = migrate_once(
             current,
             original,
             profile,
-            output / "chain" / f"{index:02d}-{profile.name}",
+            output.joinpath(*migration_path.parts),
             live_ollama=live_ollama,
             ollama_endpoint=ollama_endpoint,
             ollama_model=ollama_model,
         )
         chain.append(result)
+        record_path = (
+            PurePosixPath("records/chain") / f"{index:02d}-{profile.name}.json"
+        )
+        chain_records.append(
+            _write_profile_record(
+                output,
+                record_path,
+                run_kind="chain",
+                hop_index=index,
+                profile=profile,
+                input_path=current_path,
+                migration_path=migration_path,
+                migration=result,
+                source_digest=original.bundle_digest,
+            )
+        )
+        current_path = migration_path / "exported"
+    summary: Record = {
+        "schema_version": "restore-summary.v1",
+        "verifier_contract": "linux-ai-restore-demo.v1",
+        "provider_mode": "live-ollama" if live_ollama else "fake-only",
+        "source_bundle": {
+            "path": str(source_path),
+            "sha256": original.bundle_digest,
+        },
+        "fanout": fanout_records,
+        "chain": chain_records,
+        "status": "passed",
+    }
+    summary_data = _write_json(output / "restore-summary.json", summary)
     report: Record = {
         "schema_version": "restore-demo-result.v1",
         "source_bundle_sha256": original.bundle_digest,
@@ -879,11 +985,11 @@ def run_demo(
         "chain": chain,
         "chain_order": [profile.name for profile in PROFILES],
         "embedding_transfer": TRANSFER_LABEL,
+        "restore_summary": {
+            "path": "restore-summary.json",
+            "sha256": sha256(summary_data),
+        },
         "status": "passed",
     }
-    (output / "restore-demo-result.json").write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    _write_json(output / "restore-demo-result.json", report)
     return report

@@ -103,6 +103,22 @@ class RestoreDemoTests(unittest.TestCase):
                 for item in report["fanout"]
             ]
             self.assertEqual(tool_input_counts, [41, 43, 47])
+            summary_path = output / report["restore_summary"]["path"]
+            summary_bytes = summary_path.read_bytes()
+            self.assertEqual(
+                hashlib.sha256(summary_bytes).hexdigest(),
+                report["restore_summary"]["sha256"],
+            )
+            summary = json.loads(summary_bytes)
+            self.assertEqual(summary["schema_version"], "restore-summary.v1")
+            self.assertEqual(len(summary["fanout"]), 3)
+            self.assertEqual(len(summary["chain"]), 3)
+            for reference in [*summary["fanout"], *summary["chain"]]:
+                record = output / reference["path"]
+                self.assertEqual(
+                    hashlib.sha256(record.read_bytes()).hexdigest(),
+                    reference["sha256"],
+                )
 
     def test_repeated_fake_runs_are_byte_identical(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -112,6 +128,10 @@ class RestoreDemoTests(unittest.TestCase):
             first = (root / "first" / "restore-demo-result.json").read_bytes()
             second = (root / "second" / "restore-demo-result.json").read_bytes()
             self.assertEqual(first, second)
+            self.assertEqual(
+                (root / "first" / "restore-summary.json").read_bytes(),
+                (root / "second" / "restore-summary.json").read_bytes(),
+            )
 
     def test_bypassing_provider_adapter_is_rejected(self) -> None:
         adapter = demo.AzureAdapter(demo.FakeBackend(demo.AWS))
