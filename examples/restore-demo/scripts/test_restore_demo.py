@@ -276,5 +276,128 @@ class RestoreDemoTests(unittest.TestCase):
                 self.assertEqual(result["retrieval_engine"], "portable vector store")
 
 
+DIGEST_OK = "a" * 64
+
+
+class EmbeddingStoreClaimTests(unittest.TestCase):
+    """The optional vector-store claim a bundle may declare for its embeddings."""
+
+    STORE_ID = "support-memory"
+    DIGEST = DIGEST_OK
+
+    def _bundle_with(self, root: Path, **claim: object) -> Path:
+        bundle = copied_bundle(root)
+        document = json.loads(
+            (bundle / "assets/embeddings.json").read_text(encoding="utf-8")
+        )
+        document.update(claim)
+        replace_asset(
+            bundle,
+            "embeddings",
+            (json.dumps(document, indent=2) + "\n").encode(),
+        )
+        return bundle
+
+    def test_a_bundle_without_a_claim_omits_the_block(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "output"
+            demo.run_demo(BUNDLE, output)
+            summary = json.loads(
+                (output / "restore-summary.json").read_text(encoding="utf-8")
+            )
+
+            self.assertNotIn("embedding_stores", summary)
+
+    def test_a_declared_claim_is_relayed_into_the_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = self._bundle_with(
+                root, store_id=self.STORE_ID, store_evidence_sha256=self.DIGEST
+            )
+            output = root / "output"
+            demo.run_demo(bundle, output)
+            summary = json.loads(
+                (output / "restore-summary.json").read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(
+                summary["embedding_stores"],
+                [{"store_id": self.STORE_ID, "store_evidence_sha256": self.DIGEST}],
+            )
+            self.assertEqual(summary["status"], "passed")
+
+    def test_a_claim_does_not_change_the_restore_outcome(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = self._bundle_with(
+                root, store_id=self.STORE_ID, store_evidence_sha256=self.DIGEST
+            )
+            plain = root / "plain"
+            claimed = root / "claimed"
+            demo.run_demo(BUNDLE, plain)
+            demo.run_demo(bundle, claimed)
+            before = json.loads(
+                (plain / "restore-demo-result.json").read_text(encoding="utf-8")
+            )
+            after = json.loads(
+                (claimed / "restore-demo-result.json").read_text(encoding="utf-8")
+            )
+
+            # The claim rides along with the bundle, so bundle digests differ,
+            # but every behaviour gate must report exactly the same result.
+            self.assertEqual(
+                [item["behavior_gate"] for item in before["fanout"]],
+                [item["behavior_gate"] for item in after["fanout"]],
+            )
+            self.assertEqual(before["chain_order"], after["chain_order"])
+
+    def test_a_claim_is_still_deterministic_across_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = self._bundle_with(
+                root, store_id=self.STORE_ID, store_evidence_sha256=self.DIGEST
+            )
+            demo.run_demo(bundle, root / "first")
+            demo.run_demo(bundle, root / "second")
+
+            self.assertEqual(
+                (root / "first" / "restore-summary.json").read_bytes(),
+                (root / "second" / "restore-summary.json").read_bytes(),
+            )
+
+    def test_a_store_id_without_a_digest_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = self._bundle_with(root, store_id=self.STORE_ID)
+
+            with self.assertRaisesRegex(demo.RestoreError, "store evidence digest"):
+                demo.run_demo(bundle, root / "output")
+
+    def test_a_digest_without_a_store_id_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = self._bundle_with(root, store_evidence_sha256=self.DIGEST)
+
+            with self.assertRaisesRegex(demo.RestoreError, "store_id is invalid"):
+                demo.run_demo(bundle, root / "output")
+
+    def test_a_malformed_claim_is_rejected(self) -> None:
+        cases = (
+            {"store_id": "", "store_evidence_sha256": DIGEST_OK},
+            {"store_id": "x" * 129, "store_evidence_sha256": DIGEST_OK},
+            {"store_id": 7, "store_evidence_sha256": DIGEST_OK},
+            {"store_id": "support-memory", "store_evidence_sha256": "A" * 64},
+            {"store_id": "support-memory", "store_evidence_sha256": "a" * 63},
+            {"store_id": "support-memory", "store_evidence_sha256": 7},
+        )
+        for claim in cases:
+            with self.subTest(claim=claim), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                bundle = self._bundle_with(root, **claim)
+
+                with self.assertRaises(demo.RestoreError):
+                    demo.run_demo(bundle, root / "output")
+
+
 if __name__ == "__main__":
     unittest.main()

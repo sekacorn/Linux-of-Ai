@@ -662,6 +662,31 @@ def _check_embeddings(
     return best_id, TRANSFER_LABEL, dimension
 
 
+def _embedding_store_claim(document: Record) -> Record | None:
+    """Return the optional vector-store claim a portable-embeddings asset carries.
+
+    The claim is what lets a verified restore of this bundle be tied to one
+    ``embedding-portability.v1`` evidence document. The runner only relays it:
+    the evidence document lives outside the bundle, so its digest has to be
+    declared here rather than computed. Both fields are required together,
+    because a store name with no digest would name a claim without binding it
+    to any content.
+    """
+    store_id = document.get("store_id")
+    digest = document.get("store_evidence_sha256")
+    if store_id is None and digest is None:
+        return None
+    if not isinstance(store_id, str) or not 0 < len(store_id) <= 128:
+        raise RestoreError("Portable embedding store_id is invalid")
+    if (
+        not isinstance(digest, str)
+        or len(digest) != 64
+        or digest.strip("0123456789abcdef")
+    ):
+        raise RestoreError("Portable embedding store evidence digest is invalid")
+    return {"store_id": store_id, "store_evidence_sha256": digest}
+
+
 def _check_ontology(path: Path) -> str:
     try:
         from open_ontology_lite import (
@@ -976,6 +1001,13 @@ def run_demo(
         "chain": chain_records,
         "status": "passed",
     }
+    # Omitted unless the bundle declares a store, so a bundle without one
+    # produces a byte-identical summary to before this field existed.
+    store_claim = _embedding_store_claim(
+        parse_json(original.asset_bytes("embeddings"), "embeddings")
+    )
+    if store_claim is not None:
+        summary["embedding_stores"] = [store_claim]
     summary_data = _write_json(output / "restore-summary.json", summary)
     report: Record = {
         "schema_version": "restore-demo-result.v1",

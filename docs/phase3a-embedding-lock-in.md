@@ -304,9 +304,17 @@ digest, and the suite fixtures that embed them.
 The adoption lands as two separate commits:
 
 1. **Runner change.** `portable-embeddings.v1` accepts an optional `store_id`
-   and the runner emits `embedding_stores` when one is present. With no
-   `store_id` in the bundle the block is omitted, so this commit changes no
-   digest and every existing test stays green.
+   together with a required companion `store_evidence_sha256`, and the runner
+   emits `embedding_stores` when they are present. With neither field in the
+   bundle the block is omitted, so this commit changes no digest and every
+   existing test stays green.
+
+   The two fields are required together. The evidence document the digest
+   refers to lives outside the restore bundle, so the runner cannot compute it
+   and must relay an operator declaration; a `store_id` with no digest would
+   name a claim without binding it to any content, which is exactly the case
+   the scoring rules refuse to count. Declaring one field without the other is
+   therefore an error, not a partial claim.
 2. **Digest regeneration.** The demo bundle declares its `store_id` and every
    affected digest and fixture is regenerated from the runner's own output.
 
