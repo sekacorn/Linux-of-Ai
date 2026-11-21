@@ -1,0 +1,111 @@
+# Phase 7 release plan
+
+Status: planning only. This document does not authorize version changes,
+tags, pushes, package publication, or a CI bypass.
+
+## Feature-branch inventory
+
+The following repositories have commits on `feature/vendor-exit-evidence`
+relative to `main`.
+
+| Repository | Feature commits | Current version | Phase 7 version | Release action |
+|---|---|---:|---:|---|
+| AgentForge | `6b0fbd6` | `0.5.4` | No bump | Merge the `.gitignore` change after CI. It does not change the distribution, so do not publish an otherwise identical `agentforge-oss` artifact. |
+| AIAuditLog | `0f43ec4` | `0.2.0b1` | `0.2.0b2` | Publish the bounded privacy-profile loading fix and regression test. |
+| OpenOntologyLite | `63b89cc` | `0.2.0b2` | `0.2.0b3` | Publish the lossless OpenOntologyLite JSON-LD transfer and round-trip API used by restore verification. |
+| ModelSwapBench | `52e6a71` | `0.1.0b1` | `0.1.0b2` | Publish explicit Ollama opt-in and the unintended-network regression test. |
+| AI Infrastructure Suite | `9007a8f`, `18ef614`, `ea9db42`, `08879be`, plus the Phase 2 close-out commit | `0.1.0b1` | `0.1.0b2` | Publish the 11-vector exit report, restore-summary verification, profile-level drift reporting, schemas, CLI mode, and tests after its dependencies are available. |
+| linux-ai-repo | `e101fda`, `5585f77`, `3fe3d9f`, `7cff992`, `42d1c0e`, plus the Phase 7 planning commit | Not packaged | No bump | Merge the demos, evidence contracts, documentation, and CI workflow after the released OpenOntologyLite pin replaces the temporary branch checkout. |
+
+AgentPolicyPack, AIMeter OSS, and PrivateAIStack do not have commits on this
+feature branch and require no Phase 7 version bump for this work.
+
+## Publication order
+
+Every repository must pass its complete configured Python 3.11-3.13 CI before
+its release tag is created. Trusted Publishing must use the existing GitHub
+OIDC workflow; no API token or manual artifact upload is part of this plan.
+
+1. Merge AgentForge commit `6b0fbd6` after CI. Do not tag or publish because the
+   package contents and runtime are unchanged.
+2. Prepare, verify, tag, and publish `aiauditlog==0.2.0b2`.
+3. Prepare, verify, tag, and publish `openontologylite==0.2.0b3`.
+4. Prepare, verify, tag, and publish `modelswapbench==0.1.0b2`.
+5. Update the AI Infrastructure Suite dependency floors listed below. Prepare,
+   verify, tag, and publish `ai-infrastructure-suite==0.1.0b2` only after the
+   three exact dependency releases install successfully from PyPI.
+6. Replace linux-ai-repo's temporary feature-branch checkout with the released
+   OpenOntologyLite pin, run its Python 3.11-3.13 workflow, and merge it. This
+   repository has no package publication step.
+
+Release steps 2-4 are independent at runtime, but the fixed sequence makes the
+evidence trail and rollback point unambiguous. AI Infrastructure Suite remains
+last among packages because it consumes all three releases.
+
+## Required version and dependency changes
+
+### AIAuditLog
+
+- Change package and public version references from `0.2.0b1` to `0.2.0b2`.
+- Do not change dependency floors for this fix.
+
+### OpenOntologyLite
+
+- Change package and public version references from `0.2.0b2` to `0.2.0b3`.
+- Do not add an AI Infrastructure Suite dependency; JSON-LD remains an
+  independently usable OpenOntologyLite API.
+
+### ModelSwapBench
+
+- Change package and public version references from `0.1.0b1` to `0.1.0b2`.
+- Keep `agentforge-oss>=0.5.1,<0.6.0`. The Ollama opt-in change does not depend
+  on the AgentForge `.gitignore` commit or a new AgentForge package.
+
+### AI Infrastructure Suite
+
+- Change package and public version references from `0.1.0b1` to `0.1.0b2`.
+- Raise `aiauditlog>=0.2.0b1,<0.3.0` to
+  `aiauditlog>=0.2.0b2,<0.3.0` in `core`, `privacy`, and `all`.
+- Raise `openontologylite>=0.2.0b2,<0.3.0` to
+  `openontologylite>=0.2.0b3,<0.3.0` in `core`, `privacy`, and `all`.
+- Raise `modelswapbench>=0.1.0b1,<0.2.0` to
+  `modelswapbench>=0.1.0b2,<0.2.0` in `benchmarking` and `all`.
+- Keep `agentforge-oss>=0.5.4,<0.6.0` unchanged because Phase 7 does not publish
+  a new AgentForge artifact.
+- Keep AgentPolicyPack, AIMeter OSS, and PrivateAIStack pins unchanged.
+
+### AgentForge and linux-ai-repo
+
+- AgentForge remains `0.5.4`; no tag or package publication is needed.
+- linux-ai-repo has no package version.
+
+## CI reference switch
+
+During Phase 2, `.github/workflows/offline-demos.yml` checks out
+OpenOntologyLite at `feature/vendor-exit-evidence`. After
+`openontologylite==0.2.0b3` is published and independently installable, Phase 7
+must:
+
+1. Remove the OpenOntologyLite repository checkout step and its mutable Git
+   branch reference.
+2. Remove `OpenOntologyLite/pyproject.toml` from the pip cache key.
+3. Install exactly `openontologylite==0.2.0b3` from PyPI in the workflow.
+4. Run the restore-demo and vendor-exit-demo tests, Ruff, strict mypy, and
+   Bandit on Python 3.11, 3.12, and 3.13.
+5. Confirm the ontology round trip resolves from installed `site-packages`, not
+   from a sibling checkout.
+
+After the umbrella workflow is green against the released dependency, normal
+maintenance may widen the exact CI test pin to the declared compatible range.
+The release-validation commit itself should retain the exact pin for
+reproducibility.
+
+## Release gates
+
+For every package release, verify the version, changelog, metadata, wheel,
+sdist, Twine validation, isolated wheel and sdist installs, CLI/import smoke
+tests, artifact scans, and the configured lint, formatting, typing, security,
+audit, and test checks. Confirm Trusted Publishing and PyPI installation before
+moving to the next dependent release. Never reuse a failed or already-published
+version, bypass branch protection, force-push, or claim a live integration that
+was not exercised.
