@@ -20,6 +20,28 @@ relative to `main`.
 AgentPolicyPack, AIMeter OSS, and PrivateAIStack do not have commits on this
 feature branch and require no Phase 7 version bump for this work.
 
+## restore-summary.v1 forward compatibility
+
+Phase 3a adds an optional `embedding_stores` block to `restore-summary.v1`
+without renaming the schema, because no implementation had shipped the block
+and existing summaries stay valid without it.
+
+The compatibility is one-directional. A restore summary produced by the updated
+`linux-ai-repo` demo carries `embedding_stores`, and the schema sets
+`additionalProperties: false`, so an **older installed**
+`ai-infrastructure-suite==0.1.0b1` rejects that newer summary as invalid input
+rather than ignoring the unknown block. Both artifacts are pre-release, and the
+publication order below already releases the suite after the umbrella work, so
+no released pair is affected.
+
+Two consequences for Phase 7:
+
+1. Release `ai-infrastructure-suite==0.1.0b2` before advertising the updated
+   restore summary, and keep the umbrella merge last so the newer summary never
+   reaches an older installed suite.
+2. State in the suite changelog that `0.1.0b2` is required to read a restore
+   summary containing `embedding_stores`.
+
 ## Publication order
 
 Every repository must pass its complete configured Python 3.11-3.13 CI before

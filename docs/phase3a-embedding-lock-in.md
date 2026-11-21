@@ -144,11 +144,16 @@ vector record; any unmatched identifier on either side is invalid evidence.
 
 `source_text.status` is exactly one of:
 
-| Status | Meaning | Coverage effect |
-|---|---|---|
-| `retained` | Local source bytes exist and are referenced by path and digest. | Counts toward coverage when both digests match. |
-| `missing` | Source text is not retained. | Counts against coverage. |
-| `deleted_by_policy` | Source text was deliberately deleted under a retention or privacy policy. | Excluded from coverage entirely. |
+| Status | Meaning | Coverage effect | Verification |
+|---|---|---|---|
+| `retained` | Local source bytes exist and are referenced by path and digest. | Counts toward coverage when both digests match. | Scanner verified: the bytes are hashed. |
+| `missing` | Source text is not retained. | Counts against coverage. | Scanner verified by absence of a reference. |
+| `deleted_by_policy` | Source text was deliberately deleted under a retention or privacy policy. | Excluded from coverage entirely. | **Attested.** The scanner cannot distinguish a policy deletion from an accidental loss. |
+
+`deleted_by_policy` is an operator declaration. The scanner sees only that no
+source reference was supplied, so the report labels every
+`deleted_by_policy` count and the coverage derived from it as attested, never
+as verified.
 
 A `retained` entry supplies `path` and `sha256`. A `missing` entry supplies
 neither. A `deleted_by_policy` entry may supply a bounded free-text `reason`
@@ -216,11 +221,39 @@ than silent. If every store in the document is `not_applicable`, the embeddings
 vector itself is reported as inapplicable with no score, using the report's
 existing applicability flag.
 
-**Open risk to accept or reject.** This rule means an operator who deletes all
-source text receives no lock-in score for embeddings instead of 100. The
-alternative, scoring a fully deleted store 100, would attribute the operator's
-own retention policy to the vendor. The design prefers the visible exclusion
-and relies on the printed counts.
+**Accepted risk.** This rule means an operator who deletes all source text
+receives no lock-in score for embeddings instead of 100. The alternative,
+scoring a fully deleted store 100, would attribute the operator's own retention
+policy to the vendor. The design accepts the visible exclusion and compensates
+with the attested labelling, the majority warning, and the retained-vector
+finding below.
+
+### Attested-deletion warning
+
+When `deleted_by_policy` records are a majority of a store, so
+
+```text
+deleted_by_policy * 2 > total vector records
+```
+
+the store emits a warning stating that its coverage depends on attested
+deletions that the scanner cannot verify. The all-deleted case satisfies this
+condition and always carries the warning. The warning appears in both Markdown
+and JSON output and does not change the score.
+
+### Retained-vector finding
+
+For every `deleted_by_policy` record whose vector record is still present in
+the inventory, the store emits the finding `vector retained after source
+deletion`. Under this contract every record is enumerated by its vector, so the
+finding reports each policy-deleted record whose vector was kept.
+
+The finding is reported and never scored. It exists because a vector derived
+from deleted source text may still carry information about that text, which is a
+retention and privacy question for the operator rather than a vendor lock-in
+measurement. The finding carries the store ID and the affected record count.
+JSON additionally lists up to 20 affected record identifiers with a truncation
+flag; it never prints source text or vector values.
 
 ## Restore linkage
 
@@ -261,22 +294,27 @@ against different content. It never earns 0; the store stays at 25 and the
 reason names the digest mismatch. The identifier selects which claim to check;
 the digest is what binds the claim to content.
 
-**Scope decision for approval.** The scanner, schema, and fixtures for this
-block are Phase 3a work. Updating the `linux-ai-repo` restore demo runner to
-emit `embedding_stores` is a separate change, because the demo's
-`portable-embeddings.v1` asset carries no `store_id` today and adding one
-changes that asset's digest, the bundle manifest, the source bundle digest, all
-six profile-record digests, the restore-summary digest, and the suite fixtures
-that embed them. Two options:
+**Approved scope.** Option A: the `linux-ai-repo` restore demo adopts the block
+so a score of 0 is reachable end to end in the real demo rather than only in
+fixtures. The demo's `portable-embeddings.v1` asset carries no `store_id`
+today, and adding one changes that asset's digest, the bundle manifest, the
+source bundle digest, all six profile-record digests, the restore-summary
+digest, and the suite fixtures that embed them.
 
-| Option | Work | Consequence |
-|---|---|---|
-| A. Include the runner change in 3a-2 | Add optional `store_id` to `portable-embeddings.v1`, emit `embedding_stores`, regenerate every affected digest and fixture | A score of 0 is reachable end to end in the real demo |
-| B. Defer the runner change | Phase 3a ships scanner, schema, and synthetic fixtures only | A score of 0 is exercised only by fixtures; the real demo caps at 25 until a follow-up |
+The adoption lands as two separate commits:
 
-Recommendation: option A, so the headline capability is proven end to end
-rather than only in fixtures, accepting a mechanical digest regeneration that
-the demo runner itself produces.
+1. **Runner change.** `portable-embeddings.v1` accepts an optional `store_id`
+   and the runner emits `embedding_stores` when one is present. With no
+   `store_id` in the bundle the block is omitted, so this commit changes no
+   digest and every existing test stays green.
+2. **Digest regeneration.** The demo bundle declares its `store_id` and every
+   affected digest and fixture is regenerated from the runner's own output.
+
+Both commits must leave the complete Phase 2d suite green, including the
+per-profile and per-hop corruption attribution tests, the unattributed
+behaviour-drift tests, the adapter-swap and wrong-dimension failures, and the
+repeated-run byte comparison. A regenerated digest must never be hand-edited:
+it comes from running the demo.
 
 ## Re-embeddable status and scoring
 
@@ -336,8 +374,11 @@ A top-level `embedding_stores` section preserves per-store evidence:
 - vector layout (`single_file` or `sharded_jsonl`) and shard count;
 - vector count;
 - retained, missing, and `deleted_by_policy` counts, which must sum to the
-  vector count;
+  vector count, with the `deleted_by_policy` count labeled attested;
 - source-text coverage percentage, or null;
+- warnings, including the attested-deletion majority warning;
+- findings, including `vector retained after source deletion` with its
+  affected record count;
 - restore-link state: `verified`, `absent`, `unverified`, or
   `store_id_matched_digest_mismatch`;
 - `re_embeddable` result;
@@ -373,6 +414,14 @@ Required risk-outcome tests use otherwise valid evidence:
    over the remaining records, and never penalizes the deleted records.
 9. Full coverage with a `vendor_only` model and a verified matching restore
    link still produces score 50.
+10. A store whose `deleted_by_policy` records are a majority emits the
+    attested-deletion warning, and a store whose deletions are a minority does
+    not.
+11. A store with `deleted_by_policy` records whose vectors are still present
+    emits the `vector retained after source deletion` finding with the correct
+    affected count, and the finding changes no score.
+12. The report labels the `deleted_by_policy` count as attested and never as
+    verified.
 
 Required validation tests confirm that the scanner rejects invalid evidence
 and the CLI exits with input-error status instead of producing a trusted score:
