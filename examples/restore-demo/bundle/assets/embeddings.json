@@ -1,0 +1,16 @@
+{
+  "schema_version": "portable-embeddings.v1",
+  "model": "portable-hash-v1",
+  "dimension": 8,
+  "transfer": "vectors copied (same model), not re-embedded",
+  "items": [
+    {
+      "id": "procedure-password-reset",
+      "vector": [1, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "id": "procedure-billing-review",
+      "vector": [0, 1, 0, 0, 0, 0, 0, 0]
+    }
+  ]
+}

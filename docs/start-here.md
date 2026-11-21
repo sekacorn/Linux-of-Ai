@@ -39,6 +39,8 @@ Start with:
 Recommended first step:
 
 - Run the [Linux of AI Vendor Exit Demo](../examples/vendor-exit-demo/).
+- Run the [three-profile restore demo](../examples/restore-demo/) to exercise
+  deterministic fan-out and chained restore/re-export gates.
 
 ModelSwapBench helps compare a baseline model against a candidate replacement model. AIMeter OSS helps measure estimated cost, usage, efficiency, and outcomes. AIAuditLog helps record portable audit evidence.
 
@@ -109,6 +111,10 @@ OSS-style JSON files for cost/outcome measurement and AIAuditLog-style JSONL
 files for audit evidence.
 
 The flagship demo is an example that stays inside this repository. The Quickstart Kit is a generator that creates a separate starter workspace you can edit without changing the flagship example.
+
+The [three-profile restore demo](../examples/restore-demo/) is a separate
+offline checkpoint for portable asset restoration. It uses strict fake provider
+adapters by default and does not claim real Azure or AWS integration.
 
 ## Install commands
 

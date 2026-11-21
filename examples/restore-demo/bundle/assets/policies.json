@@ -1,0 +1,7 @@
+{
+  "schema_version": "restore-policy.v1",
+  "decisions": {
+    "high": "blocked",
+    "low": "draft_with_human_review"
+  }
+}

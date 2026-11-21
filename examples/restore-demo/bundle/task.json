@@ -1,0 +1,14 @@
+{
+  "schema_version": "restore-task.v1",
+  "task_id": "restore-password-reset-001",
+  "risk": "low",
+  "message": "I forgot my portal password. What is the approved internal procedure?",
+  "expected": {
+    "action": "draft_support_response",
+    "final_response_id": "password-reset-draft-v1",
+    "human_review": true,
+    "ontology_id": "customer-service",
+    "policy_decision": "draft_with_human_review",
+    "procedure_id": "procedure-password-reset"
+  }
+}

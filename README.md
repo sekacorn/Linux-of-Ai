@@ -24,6 +24,10 @@ New to Linux of AI? Start with the [Start Here guide](docs/start-here.md) to cho
 
 You can also inspect the [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) to see the ecosystem pattern in one deterministic, offline-first example.
 
+The [three-profile restore demo](examples/restore-demo/) separately proves
+content, behavior, and re-export gates across Azure-, AWS-, and Ollama-shaped
+offline fakes, including a chained migration through all three profiles.
+
 ## Quickstart Kit
 
 New to Linux of AI? Generate a complete offline vendor-exit workspace:
