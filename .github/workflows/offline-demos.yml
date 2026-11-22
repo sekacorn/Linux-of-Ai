@@ -28,27 +28,44 @@ jobs:
         with:
           path: linux-ai-repo
 
-      - name: Check out OpenOntologyLite
-        uses: actions/checkout@v4
-        with:
-          repository: sekacorn/OpenOntologyLite
-          # Phase 2 uses the matching contract branch. Phase 7 must install the
-          # pinned released package instead of following a Git branch.
-          ref: feature/vendor-exit-evidence
-          path: OpenOntologyLite
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: OpenOntologyLite/pyproject.toml
 
       - name: Install verification tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ./OpenOntologyLite
+          python -m pip install "openontologylite==0.2.0b3"
           python -m pip install ruff mypy bandit
+
+      # The demos must exercise the released package. An exact pin plus this
+      # check is what stops a sibling checkout silently satisfying the import
+      # again, which is how the Phase 2 layout worked.
+      - name: Confirm OpenOntologyLite resolves from site-packages
+        run: |
+          python - <<'PY'
+          import pathlib
+          import open_ontology_lite
+          from importlib.metadata import version
+          from open_ontology_lite import (
+              json_ld_text,
+              load_json_ld,
+              ontology_digest,
+              ontology_from_json_ld,
+          )
+
+          installed = version("openontologylite")
+          location = pathlib.Path(open_ontology_lite.__file__).resolve()
+          print(f"openontologylite {installed} from {location}")
+          if installed != "0.2.0b3":
+              raise SystemExit(f"expected openontologylite 0.2.0b3, found {installed}")
+          if "site-packages" not in location.parts:
+              raise SystemExit(f"expected an installed package, resolved {location}")
+          print("JSON-LD transfer API importable:", all(
+              callable(f) for f in (json_ld_text, load_json_ld, ontology_from_json_ld, ontology_digest)
+          ))
+          PY
 
       - name: Test vendor-exit demo
         working-directory: linux-ai-repo

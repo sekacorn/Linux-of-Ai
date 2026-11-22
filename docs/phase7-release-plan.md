@@ -476,10 +476,22 @@ CI names directly. Today that is OpenOntologyLite only.
 
 ## CI reference switch
 
-During Phase 2, `.github/workflows/offline-demos.yml` checks out
+**Status: done at checkpoint 7-4.** All five steps below are applied. Instead
+of removing `cache: pip` keyed on the sibling checkout and repointing it, the
+pip cache was dropped entirely: this repository ships no dependency manifest,
+so `setup-python` has nothing stable to key a cache on, and a wrong key is
+worse than no cache for a four-package install.
+
+Step 5 is enforced rather than merely checked once: a workflow step asserts the
+installed version is exactly `0.2.0b3` and that `open_ontology_lite` resolves
+from a path containing `site-packages`. Both assertions were confirmed to fail
+against `0.2.0b2` before being relied on, so a sibling checkout or a drifted
+version cannot satisfy the import silently again.
+
+During Phase 2, `.github/workflows/offline-demos.yml` checked out
 OpenOntologyLite at `feature/vendor-exit-evidence`. After
-`openontologylite==0.2.0b3` is published and independently installable, Phase 7
-must:
+`openontologylite==0.2.0b3` was published and independently installable, Phase 7
+had to:
 
 1. Remove the OpenOntologyLite repository checkout step and its mutable Git
    branch reference.
