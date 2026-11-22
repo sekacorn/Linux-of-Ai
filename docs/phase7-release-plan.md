@@ -509,6 +509,74 @@ maintenance may widen the exact CI test pin to the declared compatible range.
 The release-validation commit itself should retain the exact pin for
 reproducibility.
 
+## Release dry runs
+
+Every release workflow takes a `dry_run` boolean input, **default true**. A dry
+run performs the tag/version check, the tests, the build, `twine check` and the
+artifact checks, then stops before the PyPI upload. Jobs that depend on the
+publish job skip with it.
+
+Default true means an accidental dispatch rehearses instead of publishing. The
+cost is that a real release has to say so explicitly, which is the right way
+round for something that cannot be undone: a published version can never be
+re-uploaded.
+
+### A real release
+
+AIAuditLog, OpenOntologyLite and ModelSwapBench publish on a tag push, and a
+push carries no inputs, so nothing changes for them:
+
+```bash
+git -C <repo> tag -a <tag> origin/main -m "<message>"
+git -C <repo> push origin refs/tags/<tag>:refs/tags/<tag>
+```
+
+AI Infrastructure Suite publishes by dispatch, so with `dry_run` defaulting to
+true its real release **must pass the flag explicitly**:
+
+```bash
+gh workflow run release.yml --repo sekacorn/AI-Infrastructure-Suite   -f tag=<tag> -f dry_run=false
+```
+
+Omitting `dry_run=false` there produces a rehearsal, not a release. That is the
+intended failure mode.
+
+### A rehearsal
+
+```bash
+gh workflow run release.yml --repo sekacorn/<repo> -f tag=<existing tag>
+```
+
+The three tag-triggered workflows gained a required `tag` input for this. Their
+version check previously read `github.ref_name`, which on a dispatch is the
+branch name, so it would have compared `main` against the package version and
+failed. Both jobs now check out the resolved ref and the check compares against
+the same value.
+
+### Why the condition is written the way it is
+
+```yaml
+if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+```
+
+`inputs.dry_run` is empty on a push event. The event check comes first and
+settles a push before the input is consulted.
+
+| event | `inputs.dry_run` | publish |
+|---|---|---|
+| `push` (tag) | empty | runs |
+| `workflow_dispatch` | `false` | runs |
+| `workflow_dispatch` | `true` (default) | skipped |
+
+Two safeguards keep this honest. The first job prints the event, the raw input
+and the resolved mode, so every run states on its face whether it will upload.
+And the publish job re-derives the mode immediately before the upload step and
+fails if it is a dry run, so a mistake in the job condition produces a failed
+run rather than an unintended upload.
+
+Attestation generation happens inside the publish action, so a dry run cannot
+exercise it. Everything before it is exercised in full.
+
 ## Post-release backlog
 
 Deliberately deferred. None of these is required for this release, and none
