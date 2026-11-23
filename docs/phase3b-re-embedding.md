@@ -1,7 +1,8 @@
 # Phase 3b re-embedding design
 
-Status: design for approval (checkpoint 3b-0). No pipeline, schema, CLI or
-scoring implementation is authorized by this document.
+Status: **approved at checkpoint 3b-0**, with the owner's amendments applied.
+This document authorizes the checkpoints listed at the end; each still needs
+its own review and merge.
 
 Phase 3a answers "can this store be rebuilt?" from retained source text,
 digests and coverage. It deliberately stops there: it never calls an embedding
@@ -47,17 +48,30 @@ useful. Proposed, as attested values an operator may copy rather than invent:
 
 | Identifier | Revision | Dimensions | Scheme |
 |---|---|---|---|
-| `agentforge.hashed-bow.blake2b` | `1` | as configured, default 512 | unsigned term frequency |
-| `privateaistack.hashed-bow.sha256-signed` | `1` | as configured, default 64 | signed plus/minus 1 |
+| `agentforge.hashed-bow.blake2b` | `1` | declared per store | unsigned term frequency |
+| `privateaistack.hashed-bow.sha256-signed` | `1` | declared per store | signed plus/minus 1 |
 
 These are descriptive names for schemes that already exist. They are not new
 public APIs and they rename nothing.
 
+**Model identity is the triple `id` + `revision` + `dimensions`**, not the
+identifier alone. Two stores using the same scheme at different dimensions are
+different models for every purpose in this phase: comparison, re-embedding
+target selection and scoring.
+
+**A dimension mismatch against the declared identity is an error, never a
+default.** If the vectors a run produces do not have the declared number of
+dimensions, the run fails and no store is written. Nothing in 3b ever falls
+back to a backend's default dimension, which is what makes the backend
+inconsistency below harmless here.
+
 **AgentForge's own three backends disagree on default dimension** — `vector.py`
 512, `sqlite.py` 64, `pgvector.py` 64 — with identical tokenizer and hash. A
 store built by one backend is not readable by another at defaults. That is a
-pre-existing inconsistency, reported separately, and 3b must not paper over it:
-dimensions come from the declared model in the evidence, never from a default.
+pre-existing inconsistency and is **not** fixed by this phase; it is recorded
+separately in [known-issues.md](known-issues.md) for Phase 4. 3b is unaffected
+because dimensions always come from the declared model identity in the
+evidence, never from a backend default.
 
 ### Placement
 
@@ -174,6 +188,13 @@ is a resumable batch job rather than a single pass.
   at a time. Vectors are appended to sharded JSONL as each batch completes,
   which is the layout 3a already streams and digests per shard. Nothing holds
   the whole store.
+- **A default batch size safe on a 16 GB machine.** The default is **64
+  records**, chosen so the worst case stays small: 64 records at 3a's
+  `MAX_SOURCE_TEXT_BYTES` of 1 MiB each is 64 MiB of text, plus 64 vectors at
+  the 8192-dimension ceiling is under 5 MiB as Python floats. That is a few
+  hundred megabytes with interpreter overhead, not gigabytes, and it holds
+  regardless of store size because the store is never loaded whole. Operators
+  with more memory can raise it; the point of the default is that nobody has to.
 - **Crash safety.** The target store is only ever appended to in whole batches,
   and the checkpoint is written after the shard. A crash between the two leaves
   a shard whose records are not yet claimed; resume detects the mismatch between
@@ -261,25 +282,35 @@ The existing vocabulary does not cover this, and stretching it would be
 dishonest. 3a's `verified (local evidence)` means digests and coverage were
 re-checked; a quality result is not a digest check.
 
-**Proposed: `verified (re-embedded, quality sampled)`.**
+Three labels, all of which require that **the scanner itself reproduced the
+re-embedding** and obtained the target store's declared digest. They differ
+only in what the quality comparison found.
 
-What it means, precisely: the scanner re-ran the re-embedding on the declared
-target model and reproduced the target store's digest, **and** ran the declared
-query set against both stores and found the declared thresholds met.
+| Label | The scanner reproduced the rebuild, and | Score effect |
+|---|---|---|
+| `verified (re-embedded, quality sampled)` | the declared query set met the declared thresholds | may move 50 to 25 |
+| `verified (re-embedded, quality not measured)` | no query set was supplied, or it was too small for `sufficient_evidence` | none |
+| `verified (re-embedded, quality below threshold)` | the query set ran and at least one threshold was not met | **never improves the score** |
 
-What it does **not** mean, to be stated wherever the label appears:
+A rebuild the scanner **cannot** re-run — a live model run, most obviously —
+gets none of these. It stays `attested`, exactly like any other
+operator-supplied record whose bytes match its digest, and it does not move the
+score. See Determinism and live models.
+
+What the labels do **not** mean, to be stated wherever they appear:
 
 - That retrieval is equivalent in production. It was measured on one query set.
-- That the query set is representative. That is the operator's attested claim,
-  and it belongs in `attested_claims`.
+- That the query set is representative. That is the operator's attested claim
+  and appears in `attested_claims` as `query set representativeness`.
 - That the new model is as good as the old one. Thresholds were met, which is a
   weaker statement and the only one the evidence supports.
 - That the target model's availability, weight digest or license are true. Those
   stay attested exactly as in 3a.
 
-When the re-embedding was reproduced but the quality comparison was absent or
-inconclusive, the label is `verified (re-embedded)` with no quality claim, and
-the reason says why the comparison did not run.
+`verified (re-embedded, quality below threshold)` is deliberately a *verified*
+label rather than a failure to report. The rebuild really was reproduced; it is
+the quality claim that failed, and saying so is more useful than discarding the
+record. It simply never earns a better score than the store had without it.
 
 ## Privacy and data egress
 
@@ -339,23 +370,32 @@ and quality may change." A re-embed record showing a completed rebuild onto an
 `open_weight_self_hostable` target, with quality thresholds met, answers that
 objection with evidence.
 
-- **Option A, conservative.** The record is reported and changes no score. The
-  50 stands. Simple, and never overstates.
-- **Option B, recommended.** A store at 50 moves to 25 when a re-embed record
-  shows a reproduced rebuild onto a self-hostable target, with quality
-  thresholds met and full retained coverage. 25 is "validated export with a
-  compatible importer", and a demonstrated rebuild is precisely a validated
-  importer. Anything short of all of those conditions leaves the 50 in place.
+**Approved: Option B, under four conditions that must all hold.** A store at 50
+moves to 25 only when:
 
-Option B is recommended because it lets the rubric say something true that it
-currently cannot: that this particular vendor-only store has a demonstrated
-escape path. Option A is defensible if the preference is for scores to move only
-on digest-checkable facts, and the honest objection to B is that part of its
-basis — the query set's representativeness — is attested, not verified.
+1. **The scanner itself reproduced the rebuild** and obtained the target
+   store's declared digest. An operator's record alone is never enough.
+2. **The quality check passed its declared thresholds** — the label is
+   `verified (re-embedded, quality sampled)`. Both
+   `quality not measured` and `quality below threshold` leave the 50 in place.
+3. The target model is `open_weight_self_hostable`.
+4. Retained coverage is complete: every retained record was rebuilt.
 
-Under either option the row gains the re-embed record's reference, the label
-above, and the attested claims it rests on. No existing level, state or score
-changes meaning.
+25 is "validated export with a compatible importer", and a rebuild the scanner
+reproduced is precisely a validated importer. Anything short of all four
+conditions leaves the 50 untouched.
+
+The rejected alternative, recorded so the choice is legible later: Option A
+would have reported the record and changed no score. It is defensible if one
+wants scores to move only on digest-checkable facts, and the honest objection to
+B is that part of its basis — the query set's representativeness — is attested
+rather than verified. Condition 1 is what makes B defensible anyway: the
+scanner's own reproduction is digest-checkable, and the attested part is
+confined to `attested_claims` where a reader can see it.
+
+The row gains the re-embed record's reference, the label, and the attested
+claims it rests on, including `query set representativeness`. No existing level,
+state or score changes meaning.
 
 ## Determinism and live models
 
@@ -436,14 +476,35 @@ report in exactly the approved way and in no other.
 embedding model, recording its digest. Never in CI. Deliverable: evidence the
 pipeline works against a real model, with its irreproducibility stated.
 
+The model must be a **small** local embedding model, well under 1 GB —
+`all-minilm` or `nomic-embed-text` are the candidates. Its download size is to
+be checked and confirmed with the owner **before** anything is pulled; disk is
+finite and a stray multi-gigabyte pull is not recoverable attention. A live run
+produces an `attested` record, never a `verified (re-embedded, ...)` one, so
+3b-7 proves the pipeline works and deliberately earns no score.
+
 Phase 3b releases nothing and bumps no versions.
 
-## Decisions needed before 3b-1
+**Housekeeping, every checkpoint.** Temporary virtual environments and
+smoke-test directories are deleted when the checkpoint finishes, and the disk
+freed is reported. Only `C:\lai-venvs` persists between checkpoints.
 
-1. **Placement**, as above: execution in PrivateAIStack, quality in
-   ModelSwapBench, schema in the suite, suite diagnostics-only, no new package.
-2. **The scoring option**, A or B, for the 50 case. B is recommended.
-3. **The model identifiers** in the table above, which become attested values
-   operators copy.
-4. **The verification label** wording, and that a quality-less record carries
-   `verified (re-embedded)` instead.
+## Decisions taken at 3b-0
+
+All four are settled; this section records them so later checkpoints do not
+reopen them.
+
+1. **Placement** as proposed: execution in PrivateAIStack, quality in
+   ModelSwapBench, the schema shipped in the suite, the suite diagnostics-only,
+   no new package.
+2. **Scoring: Option B**, gated on all four conditions above — scanner-reproduced
+   rebuild, thresholds met, self-hostable target, complete retained coverage. A
+   rebuild the scanner cannot re-run stays `attested` and moves nothing.
+3. **Model identity is `id` + `revision` + `dimensions`**, using the two
+   proposed identifiers. A dimension mismatch against the declared identity is
+   an error; no backend default is ever consulted.
+4. **Three labels**, as tabulated above. The workspace vocabulary table is the
+   owner's to extend; this phase does not edit it.
+
+The AgentForge backend default-dimension inconsistency is out of scope and is
+recorded in [known-issues.md](known-issues.md) for Phase 4.
