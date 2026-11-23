@@ -397,6 +397,30 @@ The row gains the re-embed record's reference, the label, and the attested
 claims it rests on, including `query set representativeness`. No existing level,
 state or score changes meaning.
 
+### Reason wording for deterministic schemes, to be decided in 3b-6
+
+A store rebuilt with one of the built-in hashing schemes currently gets the
+generic note "Model weights are not pinned, so re-embedding may not reproduce
+identical vectors". For these schemes the "weights" are source code, so the
+sentence reads as doubt about reproducibility that does not apply. Softer
+wording is worth considering in 3b-6, under a rule narrow enough that it cannot
+be claimed rather than earned:
+
+**Softer wording applies only when both hold.** The scanner recognises the
+exact built-in model identity — `id`, `revision` *and* `dimensions`, the whole
+triple — **and** the scanner reproduces a sample of that store's vectors
+itself. A declared "deterministic" label, a recognised `id` alone, or a
+matching `revision` at a different dimension never changes the wording.
+
+The reason is that the first condition is a claim about which code ran and the
+second is the only offline check that the code actually ran. Recognising an
+identity proves the scanner knows a scheme by that name; it proves nothing
+about the bytes on disk, which an operator could have produced with anything.
+Without the reproduction, the generic note is the honest one.
+
+This is a wording change only. It moves no score, creates no label, and nothing
+in 3b-3 through 3b-5 may assume it.
+
 ## Determinism and live models
 
 - **Every test uses fake embedders.** Deterministic, offline, no sockets. The
@@ -469,8 +493,9 @@ an old-versus-new comparison with a pass or fail and a reason.
 remote run is impossible without an explicit flag and impossible to hide.
 
 **3b-6 — exit-report integration.** The new label, the row and store fields, and
-whichever scoring option is approved. Deliverable: a re-embed record changes the
-report in exactly the approved way and in no other.
+whichever scoring option is approved, plus a decision on the reason wording for
+deterministic schemes under the two-condition rule above. Deliverable: a
+re-embed record changes the report in exactly the approved way and in no other.
 
 **3b-7 — Live verification, opt-in.** A `--live` run against a local Ollama
 embedding model, recording its digest. Never in CI. Deliverable: evidence the
