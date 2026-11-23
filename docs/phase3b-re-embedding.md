@@ -483,6 +483,28 @@ finite and a stray multi-gigabyte pull is not recoverable attention. A live run
 produces an `attested` record, never a `verified (re-embedded, ...)` one, so
 3b-7 proves the pipeline works and deliberately earns no score.
 
+### Idea for 3b-7, not approved and not implemented
+
+An **optional spot-check** could narrow the gap between "the scanner re-ran
+everything" and "the scanner re-ran nothing". If the declared local model is
+present on the machine and its weights digest matches the one in the record,
+the scanner re-embeds a random sample of records, compares each vector against
+the stored one within a stated numeric tolerance, and reports the sample size,
+the seed, the tolerance and the agreement rate. It would carry its own label,
+`verified (re-embedded, spot-checked)`, sitting between `attested` and the
+fully reproduced levels.
+
+This is recorded only so the thought is not lost. It is **not approved**, it
+does not exist, and nothing in 3b-1 through 3b-6 may assume it. It raises
+questions a design has to answer before any code: what tolerance is honest for
+floating-point embedding output across hardware, whether a sample can support
+any claim about the records it did not touch, whether a matching weights digest
+really establishes the same model, and what the label must refuse to imply. It
+will be designed and put to the owner for approval during 3b-7. Until then the
+rule from 3b-0 stands unchanged: only a rebuild the scanner can re-run in full
+reaches a verified level, and a real-model rebuild stays `attested` and moves
+no score.
+
 Phase 3b releases nothing and bumps no versions.
 
 **Housekeeping, every checkpoint.** Temporary virtual environments and
