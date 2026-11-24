@@ -97,9 +97,13 @@ and all of it is standard-library only:
   almost exactly the egress gate 3b needs, already written.
 - `pricing/registry.py` and the `evaluators/` registry.
 
-**AI Infrastructure Suite stays diagnostics-only.** It reads a re-embed record
-in `exit-report` and never runs an embedder, loads weights or opens a socket. No
-argument for changing that was found.
+**AI Infrastructure Suite stays diagnostics-only, as amended in 3b-6.** It
+**never runs a model or embeds text with one. It may recompute the two built-in
+hash-based schemes, using the standard library only and over a bounded sample,
+to verify a claim.** It opens no socket and loads no weights. The amendment
+exists because condition (a) needs the scanner to reproduce a rebuild itself,
+and recomputing a `hashlib` bucket sum over bytes already on disk is the same
+kind of re-run as the JSON-LD round trip that earns `verified`.
 
 **No new package.** Nothing here needs a distribution of its own.
 
@@ -434,6 +438,191 @@ in 3b-3 through 3b-5 may assume it.
   live run carries the model digest and the label, and the scanner cannot
   re-derive its vectors without the same model. That is reported, not hidden.
 
+## 3b-6 approved design
+
+### How `exit-report` ingests a record
+
+The `embeddings` manifest entry is unchanged — `state: embedding_inventory`
+with the `embedding-portability.v1` document's path and digest — and gains one
+optional additive field:
+
+```json
+"embeddings": {
+  "state": "embedding_inventory",
+  "path": "embeddings/embedding-portability.json",
+  "sha256": "...",
+  "re_embed_records": [{ "path": "rebuilt/re-embed-record.json", "sha256": "..." }]
+}
+```
+
+An array, capped at 64 to match `stores`: one store may be rebuilt more than
+once and a document may hold several stores. `exit-manifest.v1`'s
+`additionalProperties: false` widens by exactly this one property; the version
+does not change.
+
+**The binding is checkable, which is the point.** A record's
+`source_store.store_evidence_sha256` must equal the manifest's
+`embeddings.sha256`, and its `source_store.store_id` must name a store in that
+document. A record that does not bind is **refused**, not ignored: otherwise an
+operator could attach a record produced from a different, more flattering
+store.
+
+The target store's bytes are found beside the record, as the pipeline writes
+them, and trusted only by digest: the sibling `embedding-portability.json` must
+hash to the record's `target_store.store_evidence_sha256`. Convention locates
+the file and the digest decides whether to believe it. A missing or mismatched
+target document means no reproduction, so the record stays `attested`.
+
+### Scoring
+
+Per the 3a ladder: no retained text is 100, partial retention 75, a
+non-self-hostable model 50, a verified restore link 0, and otherwise 25.
+
+A qualifying record moves a store **only from exactly 50 to 25**. That rung is
+the right one because a store scores 50 precisely when *its own* model is
+`vendor_only`; a reproduced rebuild onto a self-hostable model is the
+demonstration that the store can be left, which is what 25 means. The other
+rungs are unreachable anyway: 75 and 100 fail `coverage.complete`, and 0 is
+strictly stronger evidence than any rebuild. So the gate is "if and only if the
+3a score is 50". A record can never lower a score and can never produce 0,
+which needs a verified restore and a functional check.
+
+Worst-store aggregation needs no change. The aggregate already takes the
+limiting per-store score, so improving one store cannot hide a worse one; the
+improvement is applied per store before aggregation and the existing logic
+runs. The `re_embeddable` aggregate is about retention, not models, and is
+untouched.
+
+### Older records
+
+Absence is read two ways, deliberately. **For scoring it is conservative**: no
+`anchor_selection` means no score movement, and no `quality` block means
+`not_measured`. **For display it is never rendered as the safe value**: a
+record without `executor_kind` prints `not stated`, never `local_builtin`,
+because printing a default nobody wrote is how an older record comes to look
+like a verified local run.
+
+### Reproduction for condition (a)
+
+The scanner reimplements the two built-in hash-based schemes itself and
+recomputes a bounded sample of the target store's vectors from the target
+store's own retained source text.
+
+Three options were weighed. An optional import of PrivateAIStack's embedders
+was **rejected**: the scanner would be using the audited party's code to verify
+the audited party's claim, which is not independent verification whatever the
+arithmetic says; it also inverts the layering and makes a verification level
+depend on what happens to be installed, so the same evidence would score
+differently on two machines. Doing no reproduction at all was **rejected**
+because condition (a) could then never hold, every record would stay
+`attested`, and the label ladder would be dead code.
+
+Two implementations agreeing is evidence. One implementation agreeing with
+itself is not.
+
+**Drift is handled by a test, not by discipline.** The nightly
+`suite-contract` job already installs both packages, so it asserts that
+PrivateAIStack's embedders and the suite's reimplementation produce identical
+vectors for the same inputs, across both schemes and several dimensions. Each
+repository keeps its own golden fixture for its own unit tests; the cross-repo
+agreement test is what makes them one contract. The dependency stays
+one-directional: the job lives in PrivateAIStack and installs the suite, and
+the suite imports nothing from PrivateAIStack.
+
+### The diagnostics-only invariant, amended
+
+The suite **never runs a model or embeds text with one. It may recompute the
+two built-in hash-based schemes, using the standard library only and over a
+bounded sample, to verify a claim.**
+
+Recomputing a hashed bag-of-words vector is arithmetic over `hashlib` across
+bytes already on disk: no weights, no socket, no provider SDK. It is the same
+kind of re-run as the JSON-LD round trip that earns `verified`, or re-hashing
+retained source text. Scope is narrow by construction — standard library only,
+the two built-in schemes only, a bounded sample, and any other identity is
+refused rather than approximated.
+
+### Seeds are derived, never accepted
+
+An operator who chooses the seed can grind it: draw set after set until the
+quality numbers clear the bar, then publish the one that passed. So the scanner
+does not take a seed from the record.
+
+- **Anchor seed** = `sha256` over the source and target store digests.
+- **Reproduction-sample seed** = `sha256` over the target store digest.
+
+Both are functions of content the record already commits to, so neither party
+can steer them, and a third party recomputes the same sets from the record
+alone.
+
+A record whose `anchor_seed` is anything other than the derived value is
+treated as `anchor_selection: operator`: reported in full, with its label,
+metrics and checks, and **never moving a score**. That is the same treatment a
+hand-picked query set gets, for the same reason — an operator who may choose
+the queries may choose the result, and no offline check can tell a fair choice
+from a flattering one.
+
+The scanner's reproduction sample is derived independently of anything in the
+record, so a seed written into a record cannot influence which vectors get
+checked.
+
+### What the report shows
+
+Per record, in JSON: the label, `rebuild_reproduced`, the score effect,
+`quality.status`, the declared `thresholds`, `metrics`, `mode`,
+`metric_basis`, `anchor_selection`, `attested_claims`, and the whole `egress`
+block.
+
+In Markdown, the verdict and the bar appear together, never apart, because a
+report that prints "quality sampled" without the bar that was cleared has told
+the reader the verdict and withheld the standard. Record-anchored results are
+labelled `neighborhood_agreement` and explicitly not a measure of search
+quality.
+
+**External execution and hosted data are impossible to miss.** A record with
+`executor_kind: external_unverified` or `hosting_mode: hosted` emits a block
+above the detail *and* in the summary table's reason, so a reader skimming only
+the summary still sees it: which executor ran, that its network behaviour is
+attested and unverified, how many records were handed over, that delivery is
+`unverified`, and which consents were given. A registry-owned run gets one
+quiet line. The asymmetry is deliberate: the alarming case should be loud and
+the ordinary case should not compete with it.
+
+### Reason wording for deterministic schemes
+
+The generic sentence — "Model weights are not pinned, so re-embedding may not
+reproduce identical vectors" — is replaced only when **both** conditions hold:
+the scanner recognises the exact identity triple (`id`, `revision` *and*
+`dimensions`), **and** the scanner recomputed a sample of that store's vectors
+and they matched. A declared "deterministic" label, a recognised `id` alone, or
+a matching `revision` at a different dimension never qualifies.
+
+Those two conditions coincide with reproduction succeeding, so the softer
+sentence appears exactly when reproduction happened and never on a claim. It
+moves no score and creates no label.
+
+### Labels
+
+Four new levels, carried by the re-embed record rather than the `embeddings`
+row:
+
+| Level | Means | Does not mean |
+|---|---|---|
+| `verified (re-embedded, quality sampled)` | The scanner recomputed a sample of N vectors that matched the target store's recorded vectors, and every declared threshold was met. | That the whole store was reproduced — a sample is not a whole-store digest. That the thresholds were adequate, that any provider received anything, or that retrieval is good. |
+| `verified (re-embedded, quality below threshold)` | The sample matched; the comparison ran and at least one declared threshold was not met. | Still a verified rebuild. Never improves a score. |
+| `verified (re-embedded, quality unjudged)` | The sample matched; the comparison produced metrics and no agreement floor was declared, so there is no verdict. | Not a pass. Never improves a score. |
+| `verified (re-embedded, quality not measured)` | The sample matched; no usable query set, or too few queries for sufficient evidence. | Never improves a score. |
+
+`attested` widens to cover a re-embed record whose rebuild the scanner did not
+reproduce, including every real-model run however good its numbers look.
+
+Combined levels such as `verified (local evidence + re-embedded, ...)` are
+deliberately **not** introduced. The `embeddings` row keeps its existing
+levels and the record carries its own; multiplying four re-embedding states by
+the existing two buys nothing.
+
+A re-embed record can only ever move a store from 50 to 25.
+
 ## Negative tests
 
 Each must fail for the stated reason, not merely fail.
@@ -456,8 +645,24 @@ Each must fail for the stated reason, not merely fail.
 7. **Model ID mismatch.** The declared target model does not match the model
    that produced the vectors. Rejected.
 
-Plus, following 3a's discipline: a re-embed record whose `source_store` digest
-does not match the input document, an input with zero retained records, a golden
+8. **A ground seed.** A record whose `anchor_seed` is not the derived value is
+   reported with its full label and metrics and moves no score, labelled
+   `anchor_selection: operator`. An operator who can choose the seed can grind
+   it, so a seed that was chosen is treated as a query set that was chosen.
+9. **Sample independence.** The scanner's reproduction sample is derived from
+   the target store digest alone, so a seed written into a record cannot
+   influence which vectors are checked. Asserted by changing the record's seed
+   and showing the sampled record identifiers do not move.
+10. **Reproduction failure.** A target store whose vectors do not match the
+    recomputation earns no verified level, moves no score, and the mismatch is
+    reported rather than swallowed.
+11. **Unrecognised identity.** A target identity the scanner does not
+    implement, and the same `id` and `revision` at a different `dimensions`,
+    both stay `attested` with no softer wording and no score movement.
+12. **Binding refusal.** A record whose `source_store` digest or `store_id`
+    does not match the manifest's embeddings entry is refused, not ignored.
+
+Plus, following 3a's discipline: an input with zero retained records, a golden
 query set too small for `sufficient_evidence`, and a quality block present on a
 record whose rebuild was not reproduced.
 
@@ -492,10 +697,12 @@ an old-versus-new comparison with a pass or fail and a reason.
 `provider_data_preflight`, the `egress` block. Negative test 6. Deliverable: a
 remote run is impossible without an explicit flag and impossible to hide.
 
-**3b-6 — exit-report integration.** The new label, the row and store fields, and
-whichever scoring option is approved, plus a decision on the reason wording for
-deterministic schemes under the two-condition rule above. Deliverable: a
-re-embed record changes the report in exactly the approved way and in no other.
+**3b-6 — exit-report integration.** The four new labels, the manifest entry,
+the 50-to-25 move, derived seeds, scanner reproduction of a bounded vector
+sample, and the reason wording for deterministic schemes under the
+two-condition rule above. The approved design is in "3b-6 approved design"
+below. Deliverable: a re-embed record changes the report in exactly the
+approved way and in no other.
 
 **3b-7 — Live verification, opt-in.** A `--live` run against a local Ollama
 embedding model, recording its digest. Never in CI. Deliverable: evidence the
