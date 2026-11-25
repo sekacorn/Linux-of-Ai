@@ -16,6 +16,7 @@ its place.** This document adds that as the twelfth vector.
 | Can a benchmark whose execution is only attested reach 0? | **No.** It caps the provider at **25**. 0 is reserved for scanner-verified evidence. |
 | Report shape | **`exit-report.v2`, rubric 2**, released as **suite 0.2.0b1**. |
 | Manifest states for this vector | **`provider_inventory` and `inapplicable` only.** |
+| Reason text for a 50 | **Must say which case applied**: a tested hosted alternative, an untested declared fallback, or a feature in use the benchmark did not exercise. When more than one applies, each is named. |
 | Rubric-2 review item (not changed now) | `restore_tested` reaches 0 on *attested* evidence today, which conflicts with the rule above. To be resolved when rubric 2 is reviewed. |
 
 ## 1. `provider-inventory.v1`
@@ -86,6 +87,12 @@ future check the scanner can run itself.
 | **50** | One of: an accepted alternative exists for every model, but some candidate is **hosted** (it moves the workload between vendors, not off them); or a **feature in use was not exercised** by the benchmark (streaming always, today); or there is no accepted alternative for every model, no vendor-only feature, and an OpenAI-compatible fallback is declared. |
 | **75** | A vendor-only feature is in use, with `reconstruction: documented`. |
 | **100** | No inventory; or a vendor-only feature with no reconstruction path; or no fallback and no accepted alternative. |
+
+**A 50 always says why.** The row's reason names which case applied: a
+tested alternative that is hosted, an untested declared fallback, or a feature
+in use that the benchmark did not exercise (named). If several apply, each is
+listed. A reader must never have to guess which of three different situations
+a 50 stands for.
 
 **Accepted** is the suite's own rule, recomputed from the benchmark's numbers
 (§4). Cost is deliberately ignored: a more expensive alternative still proves
@@ -203,6 +210,8 @@ PrivateAIStack's, that installs the suite and validates every variant they emit.
 - a hosted candidate presented as local;
 - too few samples, `evidence_sufficient: false`, or a null quality score (no move);
 - tool calling in use with a null `tool_accuracy`, or streaming in use (50, not 25);
+- each of the three 50 cases produces a reason naming that case, and a provider
+  hitting two cases names both;
 - inconsistent counts or out-of-range rates;
 - more than 64 alternatives; a digest mismatch;
 - a more expensive candidate still accepted (cost ignored);
