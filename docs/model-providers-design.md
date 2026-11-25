@@ -17,6 +17,7 @@ its place.** This document adds that as the twelfth vector.
 | Report shape | **`exit-report.v2`, rubric 2**, released as **suite 0.2.0b1**. |
 | Manifest states for this vector | **`provider_inventory` and `inapplicable` only.** |
 | Reason text for a 50 | **Must say which case applied**: a tested hosted alternative, an untested declared fallback, or a feature in use the benchmark did not exercise. When more than one applies, each is named. |
+| Who owns the `model-swap-evidence.v1` schema? | **The suite's schema is canonical from checkpoint 3.** ModelSwapBench ships a schema generated from its own writer (checkpoint 2); it describes what that writer emits and is not the authority. ModelSwapBench's `suite-contract` job must validate every `swap-evidence` variant it emits against the suite's schema and reader. |
 | Rubric-2 review item (not changed now) | `restore_tested` reaches 0 on *attested* evidence today, which conflicts with the rule above. To be resolved when rubric 2 is reviewed. |
 
 ## 1. `provider-inventory.v1`
@@ -186,6 +187,22 @@ The suite's reader:
 ModelSwapBench and AgentForge each get a `suite-contract` CI job, like
 PrivateAIStack's, that installs the suite and validates every variant they emit.
 
+**As built (checkpoint 2, ModelSwapBench 0.1.0b6 when released).** The writer
+is its own command, `modelswapbench swap-evidence`, because `exit-report` reads
+an arbitrary summary file and has no run to bind to. Beyond the contents listed
+above, the document carries what the suite needs to recompute the decision:
+p95 latency, the candidate's constraint outcomes, whether hosted candidates
+were permitted, and the recommended minimum sample size. ModelSwapBench has no
+`echo` provider and no replay run, so the only fake candidate it can report is
+`deterministic`.
+
+**Schema ownership.** From checkpoint 3 the suite's packaged schema is the
+canonical definition of `model-swap-evidence.v1`. ModelSwapBench's own schema
+is generated from its writer and may be narrower, never wider: a document the
+writer emits that the suite's schema or reader refuses is a ModelSwapBench bug.
+The `suite-contract` job in ModelSwapBench enforces this by validating every
+emitted variant against the suite's schema and feeding it to the suite's reader.
+
 ## 5. Negative tests
 
 **Inventory:**
@@ -231,11 +248,13 @@ PrivateAIStack's, that installs the suite and validates every variant they emit.
 Each is its own PR and stops for review.
 
 1. **Suite:** `provider-inventory.v1` schema, fixtures and bounded reader. No
-   scoring yet.
-2. **ModelSwapBench:** `model-swap-evidence.v1` writer, plus its
+   scoring yet. (**done**)
+2. **ModelSwapBench:** `model-swap-evidence.v1` writer (**done**), plus its
    `suite-contract` job once the suite reader exists.
-3. **Suite:** the benchmark-evidence reader and the acceptance recomputation,
-   with the cross-repo agreement test.
+3. **Suite:** the canonical `model-swap-evidence.v1` schema, the
+   benchmark-evidence reader and the acceptance recomputation, with the
+   cross-repo agreement test. ModelSwapBench's `suite-contract` job follows
+   as soon as the reader is on the suite's main branch.
 4. **Suite:** the `model_providers` vector, `exit-report.v2` and rubric 2;
    released as 0.2.0b1.
 5. **AgentForge:** `forge providers inventory`, plus its `suite-contract` job.
