@@ -1,14 +1,25 @@
 # Phase 4: portable agent memory (4a) and MCP tool connectors (4b)
 
-Status: **proposed, awaiting approval.** No code exists. 4a and 4b are designed
-together and built and released separately; each checkpoint at the end is its
-own PR and stops for review.
+Status: **approved 2026-11-25, with every recommendation in the decisions
+table below (D1-D7).** No code exists yet. 4a and 4b are designed together and
+built and released separately; each checkpoint at the end is its own PR and
+stops for review.
 
 Both sub-phases strengthen vectors the exit report **already has**: `memory`
 and `tool_connectors` are two of the original eleven, scored today only by the
 generic ladder (`restore_tested`, `importer_validated`, `exported`, ...). This
 phase adds a verifiable evidence state to each, the way `embedding_inventory`
 did for `embeddings`. No vector is added and the vector count stays at twelve.
+
+## Decisions (approved as recommended)
+
+Recorded for the build: D1 additive states and optional report sections,
+rubric stays 2; D2 new level `verified (memory export)`, whose CLAUDE.md row
+the owner adds; D3 Letta `.af` import-only, droppable; D4 the `mcp` SDK as an
+optional extra `agentforge-oss[mcp]` (`mcp>=2.3,<3`), approved as a new
+dependency subject to the checkpoint 9 gate; D5 namespaced audit event types;
+D6 the hash covers all five definition fields plus server identity; D7 record
+the dimension and refuse a mismatch.
 
 ## Decisions needed from the owner
 
