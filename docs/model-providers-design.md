@@ -18,6 +18,9 @@ its place.** This document adds that as the twelfth vector.
 | Manifest states for this vector | **`provider_inventory` and `inapplicable` only.** |
 | Reason text for a 50 | **Must say which case applied**: a tested hosted alternative, an untested declared fallback, or a feature in use the benchmark did not exercise. When more than one applies, each is named. |
 | Who owns the `model-swap-evidence.v1` schema? | **The suite's schema is canonical from checkpoint 3.** ModelSwapBench ships a schema generated from its own writer (checkpoint 2); it describes what that writer emits and is not the authority. ModelSwapBench's `suite-contract` job must validate every `swap-evidence` variant it emits against the suite's schema and reader. |
+| A provider that is itself local (checkpoint 4) | **Scores 25, attested, never 0.** Applies only when the scanner derives the provider's own endpoint as local; an SDK default or a declaration never qualifies, and vendor-only features still govern. That the model is open or self-hostable is listed as attested. An Ollama-only system scores 25, not 100. |
+| Declared inputs on a verified provider (checkpoint 4) | `verified (benchmark arithmetic)` stays on 50s scored from benchmark evidence, **and every operator-declared input the score rests on is listed in `attested_claims`**: models and features in use, vendor-only features or that none are, reconstruction paths, jurisdiction, fallback, SDK default endpoint, a local model's openness, and every benchmark number. |
+| Benchmark side declared local at a public host (checkpoint 4) | **Refused**, as the inventory refuses `hosting_declared: local`. `self_hosted` at a public host is legitimate, counted as hosted, and flagged. |
 | Rubric-2 review item (not changed now) | `restore_tested` reaches 0 on *attested* evidence today, which conflicts with the rule above. To be resolved when rubric 2 is reviewed. |
 
 ## 1. `provider-inventory.v1`
@@ -84,7 +87,7 @@ future check the scanner can run itself.
 | Score | Condition, per provider |
 |---|---|
 | **0** | Reserved for scanner-verified evidence. Nothing reaches it in rubric 2. |
-| **25** | Every model in use has an **accepted tested alternative** whose candidate is **local**; every feature in use was exercised by the benchmark; no vendor-only feature is in use. |
+| **25** | Every model in use has an **accepted tested alternative** whose candidate is **local**; every feature in use was exercised by the benchmark; no vendor-only feature is in use. **Or** the scanner derives the provider's own endpoint as local (attested; see decisions). |
 | **50** | One of: an accepted alternative exists for every model, but some candidate is **hosted** (it moves the workload between vendors, not off them); or a **feature in use was not exercised** by the benchmark (streaming always, today); or there is no accepted alternative for every model, no vendor-only feature, and an OpenAI-compatible fallback is declared. |
 | **75** | A vendor-only feature is in use, with `reconstruction: documented`. |
 | **100** | No inventory; or a vendor-only feature with no reconstruction path; or no fallback and no accepted alternative. |
@@ -111,7 +114,9 @@ the workload can leave.
 
 **What stays attested:** that any model was actually run, and every measured
 number; features in use, vendor-only features and reconstruction paths;
-jurisdiction; producer strings.
+jurisdiction; producer strings; that a local model is open or self-hostable.
+Each is listed in the provider's `attested_claims` whenever its score rests on
+it, whatever the provider's level.
 
 **Levels.** A provider scored from a benchmark gets `verified (benchmark
 arithmetic)`; one scored from declarations alone gets `attested`. The vector
@@ -249,12 +254,12 @@ Each is its own PR and stops for review.
 
 1. **Suite:** `provider-inventory.v1` schema, fixtures and bounded reader. No
    scoring yet. (**done**)
-2. **ModelSwapBench:** `model-swap-evidence.v1` writer (**done**), plus its
-   `suite-contract` job once the suite reader exists.
+2. **ModelSwapBench:** `model-swap-evidence.v1` writer, plus its
+   `suite-contract` job once the suite reader exists. (**done**)
 3. **Suite:** the canonical `model-swap-evidence.v1` schema, the
    benchmark-evidence reader and the acceptance recomputation, with the
    cross-repo agreement test. ModelSwapBench's `suite-contract` job follows
-   as soon as the reader is on the suite's main branch.
+   as soon as the reader is on the suite's main branch. (**done**)
 4. **Suite:** the `model_providers` vector, `exit-report.v2` and rubric 2;
-   released as 0.2.0b1.
+   released as 0.2.0b1. (**done**)
 5. **AgentForge:** `forge providers inventory`, plus its `suite-contract` job.
