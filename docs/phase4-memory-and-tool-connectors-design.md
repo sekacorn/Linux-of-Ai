@@ -341,9 +341,10 @@ for checkpoint 9b:
 - **Dangerous tools are never exposed by default.** That covers `http_get`,
   sandboxed execution and anything `dangerous=True`. Exposing one needs a
   separate, explicit opt-in for that tool by name; listing it is not enough.
-- **Every inbound call is audited**: caller, tool, outcome, and the time it
-  took. Arguments and results are recorded redacted, and only within the
-  existing size bounds.
+- **Every inbound call is audited**, including refused ones: caller, tool,
+  outcome and the time it took. Arguments are recorded with credentials and
+  PII redacted and within a size bound. Results are recorded by SHA-256 and
+  length only, never their content.
 - **Caller input is untrusted.** Arguments are validated against the tool's
   schema and bounded, and they pass the same sanitizer and sandbox as any
   model-requested call. Errors returned to the caller follow the 0.5.6 rule:
@@ -407,53 +408,49 @@ still means rebuilding what is behind the wrapper.
 - Either way, the format cannot say "this MCP tool wraps a vendor-only
   backend", and nothing stops a writer from omitting the fact.
 
-**Proposal: a `backend` field on each tool.** Additive with respect to every
-released reader and writer: `tool-inventory.v1` has not been published to
-PyPI.
+**Decision (owner, 2026-11-26): Option A, widened to every tool.** `backend`
+is **required on every tool** in `tool-inventory.v1` (it may be `null`). This
+is additive with respect to every released reader and writer, because
+`tool-inventory.v1` had not been published when it was added (before suite
+0.2.0b4).
 
 ```json
 {"tool_id": "crm__lookup", "name": "lookup", "server_id": "crm",
- "transport": "in_process", "server_origin": null,
+ "transport": "mcp_streamable_http", "server_origin": "https://mcp.crm.example.com",
  "definition_sha256": "...", "portability": "mcp", "reconstruction": null,
  "backend": {"system": "crm-vendor-api", "portability": "vendor_only",
              "reconstruction": "documented"}}
 ```
 
-- **`backend: null`** means the MCP server is itself the implementation (a
-  native MCP tool). Any value other than `null` is allowed only on
-  `portability: mcp` tools; a `vendor_only` tool already *is* its backend.
-- **`backend.system`** is an identifier naming the wrapped system, never a
-  URL, credential or account identifier.
-- **`backend.portability`** is `vendor_only` or `mcp` (an adapter in front of
-  another portable MCP implementation).
-- **`backend.reconstruction`** is `documented` or `none` when vendor-only, and
-  `null` otherwise.
-- **Scoring:**
-  - With a vendor-only backend, the tool scores 75 or 100 from
-    `backend.reconstruction`, **regardless of approval and hosting**. The
-    report still shows the MCP approval state, and the reason names the
-    backend.
-  - With `backend.portability: mcp`, or `backend: null`, the tool scores as
-    an MCP tool (25 or 50).
-- **Attested:** the scanner cannot see behind a wrapper, so every inventory
-  with MCP tools adds the claim "that each MCP tool's declared backend is
-  accurate" to `attested_claims`. A `null` backend is a claim, not a fact.
-- **Writer rule (AgentForge):** the `ToolConnector` adapter has no default.
-  Every connector must declare its backend, and `forge tools inventory` writes
-  it. Tests prove that an adapter-mounted tool can never be written with
+- **`backend: null`** means the tool is self-contained: its function depends
+  on no external service.
+- **A tool whose function depends on an external service names it**:
+  `{system, portability, reconstruction}`. That includes adapter-mounted
+  tools, and third-party MCP servers that wrap a vendor API.
+  - `system` is an identifier for the service, never a URL, credential or
+    account identifier.
+  - `portability` is `vendor_only` or `mcp`. `mcp` means the service is
+    itself a portable MCP implementation.
+  - `reconstruction` is `documented` or `none` for a vendor-only service, and
+    `null` for an `mcp` one.
+- **Scoring.** A vendor-only backend scores **75** (documented) or **100**
+  (none) **regardless of MCP, approval or hosting**. When a `vendor_only`
+  tool also has a vendor-only backend, the worse reconstruction governs. A
+  tool whose backend is `null` or `mcp` scores by its own fields, as before.
+  The report keeps the approval and hosting columns, and the reason names
+  the backend.
+- **Always attested.** The scanner cannot see behind a tool, so every
+  inventory's `attested_claims` includes "that each tool's declared backend
+  is accurate". A `null` backend is a claim, not a fact.
+- **Writer rule (AgentForge).** The `ToolConnector` adapter has no default
+  backend: every connector declares one, and `forge tools inventory` writes
+  it. Tests prove that an adapter-mounted tool is never written with
   `backend: null`, and that a vendor-only backend scores 75 or 100 even when
   approved and local.
 
-| Option | For | Against |
-|---|---|---|
-| **A. `backend` required (nullable) in v1, before suite 0.2.0b4 ships** | Every writer must state it, so omission cannot silently score 25. No released reader or writer exists to break. | The unreleased reader on `main` (AI-Infrastructure-Suite#27) changes before release. |
-| B. `backend` optional in v1 (absent = native) | Strictly additive, even on `main`. | A writer that omits it scores 25: exactly the gap this rule closes. |
-| C. `tool-inventory.v2` later | Leaves v1 untouched. | A second version before the first is released. |
-
-**Recommendation: A**, as a small suite PR before 0.2.0b4 is released:
-schema, reader, scoring, fixtures and the `attested_claims` entry. AgentForge's
-adapter and `forge tools inventory` are built against it in checkpoint 9b. It
-needs your approval because it changes a format.
+The options considered were A (required and nullable, chosen), B (optional,
+rejected because omission would silently score 25), and C (a v2 later,
+rejected as a second version before the first was released).
 
 ---
 
@@ -486,7 +483,7 @@ of these releases is a security fix.
 3. AgentForge: `PortableMemory` on the three backends, additive migrations and `forge memory migrate`, dimension guard. (**done**, AgentForge#26)
 4. AgentForge: export/import, tombstones, quarantine and review, CLI, credential refusal with redact/exclude, `suite-contract` variants; then release 0.5.9. (**done**, AgentForge#27; **released** 0.5.9)
 5. PrivateAIStack: `agent-memory.v1` writer; then release 0.2.0b5. (**done**, PrivateAIStack#31; **released** 0.2.0b5. **4a complete.**)
-6. Suite: `tool-inventory.v1` and `tool-approvals.v1` readers and `tool_inventory` scoring, plus canonical `mcp-servers.v1` and `tool-definition.v1` schemas; then release 0.2.0b4. (**done**, AI-Infrastructure-Suite#27, with AgentForge's contract tests in AgentForge#33; release pending.) **6b, proposed:** the `backend` field (section 11, "Wrapped backends"), before 0.2.0b4 ships.
+6. Suite: `tool-inventory.v1` and `tool-approvals.v1` readers and `tool_inventory` scoring, plus canonical `mcp-servers.v1` and `tool-definition.v1` schemas; then release 0.2.0b4. (**done**, AI-Infrastructure-Suite#27, with AgentForge's contract tests in AgentForge#33; release pending.) **6b:** the required `backend` field on every tool (section 11, "Wrapped backends"; owner-approved), before 0.2.0b4 ships.
 7. AgentPolicyPack: `mcp_governance` bundle and tests.
 8. AgentForge: SDK gate (does `mcp` 2.3.0 implement 2026-07-28?), `[mcp]` extra, connector over fake servers, approvals and hashing. (**done**: the SDK gate passed; AgentForge#29 made duplicate tool registration explicit; AgentForge#30.)
 9. AgentForge, in two parts:
