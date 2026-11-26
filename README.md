@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="#overview">Overview</a> •
   <a href="#the-mission">Mission</a> •
   <a href="#the-problem">The Problem</a> •
   <a href="#the-eight-projects">Projects</a> •
@@ -18,15 +19,66 @@
   <a href="#get-started">Get Started</a>
 </p>
 
+## Overview
+
+Linux of AI makes it cheap and provable to leave any AI vendor. Vendors are where
+things **run**; your Git repository is where things are **defined**.
+
+### The packages
+
+| Project | Package (latest on PyPI) | Role |
+|---|---|---|
+| [AgentForge](https://github.com/sekacorn/AgentForge) | [![agentforge-oss](https://img.shields.io/pypi/v/agentforge-oss.svg?label=agentforge-oss)](https://pypi.org/project/agentforge-oss/) | Multi-agent orchestration: routing, budgets, sandboxed tools, portable memory, MCP connectors |
+| [AgentPolicyPack](https://github.com/sekacorn/AgentPolicyPack) | [![agentpolicypack](https://img.shields.io/pypi/v/agentpolicypack.svg?label=agentpolicypack)](https://pypi.org/project/agentpolicypack/) | Deterministic, fail-closed policy-as-code for agent actions |
+| [AIAuditLog](https://github.com/sekacorn/AIAuditLog) | [![aiauditlog](https://img.shields.io/pypi/v/aiauditlog.svg?label=aiauditlog)](https://pypi.org/project/aiauditlog/) | Tamper-evident audit events (RFC 8785 canonical JSON, SHA-256 chains) |
+| [AIMeter](https://github.com/sekacorn/AIMeter) | [![aimeter-oss](https://img.shields.io/pypi/v/aimeter-oss.svg?label=aimeter-oss)](https://pypi.org/project/aimeter-oss/) | Usage, cost and cost per successful outcome |
+| [ModelSwapBench](https://github.com/sekacorn/ModelSwapBench) | [![modelswapbench](https://img.shields.io/pypi/v/modelswapbench.svg?label=modelswapbench)](https://pypi.org/project/modelswapbench/) | Model replacement benchmarking and vendor-exit reports |
+| [OpenOntologyLite](https://github.com/sekacorn/OpenOntologyLite) | [![openontologylite](https://img.shields.io/pypi/v/openontologylite.svg?label=openontologylite)](https://pypi.org/project/openontologylite/) | Portable business meaning, with a JSON-LD export (OpenOntologyLite envelope) |
+| [PrivateAIStack](https://github.com/sekacorn/PrivateAIStack) | [![privateaistack](https://img.shields.io/pypi/v/privateaistack.svg?label=privateaistack)](https://pypi.org/project/privateaistack/) | Local-first deployment: Ollama, PostgreSQL RAG, governed code review |
+| [AI Infrastructure Suite](https://github.com/sekacorn/AI-Infrastructure-Suite) | [![ai-infrastructure-suite](https://img.shields.io/pypi/v/ai-infrastructure-suite.svg?label=ai-infrastructure-suite)](https://pypi.org/project/ai-infrastructure-suite/) | One installer, diagnostics, and the vendor exit report |
+
+Every package is Beta, Apache-2.0, runs offline by default, and supports Python 3.11 to 3.13.
+
+### The vendor exit report: 12 vectors
+
+`ai-suite exit-report` scores how hard it would be to leave a vendor on twelve
+vectors, each from 0 (most portable) to 100 (most locked, or no evidence):
+
+policies · prompts · embeddings · fine-tunes · memory · audit history ·
+cost history · tool connectors · identities · ontology · contract terms ·
+model providers
+
+Every row states which checks the scanner re-ran itself and which claims stay
+operator-attested. The suite never runs a model. Restores are verified against
+deterministic offline fake profiles, not real vendor restores, and contract
+terms are always attested. See the
+[exit report documentation](https://github.com/sekacorn/AI-Infrastructure-Suite/blob/main/docs/exit-report.md).
+
+### What each phase delivered
+
+| Phase | Delivered |
+|---|---|
+| 0 | A lock-in audit of every package against the 12 vectors, plus the vendor-exit quickstart. |
+| 1 | `ai-suite exit-report`: an offline evidence report with versioned schemas and digest-bound claims. |
+| 2 | The [three-profile restore demo](examples/restore-demo/): content, behavior and re-export gates verified against provider-shaped offline fakes, including a chained migration. |
+| 3a | Embedding lock-in detection (`embedding-portability.v1`), scored from retained source text and vector digests. |
+| 3b | Re-embedding with built-in models, compared by **neighborhood agreement** (not search quality) against thresholds the operator declares. |
+| Model providers | Rubric 2: a `model_providers` vector from a provider inventory and benchmark evidence of tested alternatives (`swap-evidence`). |
+| 4a | Portable agent memory (`agent-memory.v1`): export, import, quarantine and review in AgentForge, export in PrivateAIStack, scoring in the suite. |
+| 4b | MCP tool connectors: approval by definition hash, rug-pull defense, serving Forge tools under default-deny rules, and a `tool-inventory.v1` in which every tool declares its backend (a vendor-only backend scores 75 or 100). |
+
+Design documents are in [docs/](docs/).
+
 ## Start Here
 
 New to Linux of AI? Start with the [Start Here guide](docs/start-here.md) to choose the right tool for your problem.
 
 You can also inspect the [Linux of AI Vendor Exit Demo](examples/vendor-exit-demo/) to see the ecosystem pattern in one deterministic, offline-first example.
 
-The [three-profile restore demo](examples/restore-demo/) separately proves
-content, behavior, and re-export gates across Azure-, AWS-, and Ollama-shaped
-offline fakes, including a chained migration through all three profiles.
+The [three-profile restore demo](examples/restore-demo/) separately verifies
+content, behavior, and re-export gates against provider-shaped offline fakes
+(Azure-, AWS-, and Ollama-shaped), including a chained migration through all
+three profiles. It is not a real vendor restore.
 
 ## Quickstart Kit
 
@@ -64,19 +116,6 @@ ModelSwapBench can now produce both an AI Vendor Exit Report and a Model
 Routing Plan, helping teams decide not only whether a model can be replaced, but
 which tasks can move safely, which need human review, and which should stay on
 the baseline model.
-
-## Project Status
-
-| Project | PyPI package | Role | Status |
-|---|---|---|---|
-| AgentForge | agentforge-oss | Agent orchestration | Published |
-| PrivateAIStack | privateaistack | Private/local deployment | Published |
-| ModelSwapBench | modelswapbench | Model replacement and vendor-exit reports | Published; includes AI Vendor Exit Report |
-| OpenOntologyLite | openontologylite | Portable ontology, business meaning, and AI workload maps | Published |
-| AgentPolicyPack | agentpolicypack | Policy-as-code for agents | Published |
-| AIAuditLog | aiauditlog | AI audit evidence | Published |
-| AIMeter OSS | aimeter-oss | AI cost, usage, efficiency, and outcome measurement | Published |
-| AI Infrastructure Suite | ai-infrastructure-suite | Unified ecosystem installation and compatibility diagnostics | Published |
 
 ## Ecosystem Screenshots
 
@@ -514,6 +553,20 @@ Visit each repository for project-specific installation instructions, examples, 
 GitHub organization and public work:
 
 - [github.com/sekacorn](https://github.com/sekacorn)
+
+---
+
+## Security
+
+Each project publishes its own advisories and security policy. Published advisories so far:
+
+| Project | Advisory | Affected | Fixed in |
+|---|---|---|---|
+| AgentForge | [GHSA-r9m2-584h-q5c5](https://github.com/sekacorn/AgentForge/security/advisories/GHSA-r9m2-584h-q5c5): credentials could leak into exception messages, tracebacks and logs | `agentforge-oss <= 0.5.5` | `0.5.6` |
+| ModelSwapBench | [GHSA-gqgx-c3hr-wrm5](https://github.com/sekacorn/ModelSwapBench/security/advisories/GHSA-gqgx-c3hr-wrm5): credentials in a model's `base_url` were written to run artefacts and logs | `modelswapbench <= 0.1.0b4` | `0.1.0b5` |
+| PrivateAIStack | [GHSA-mhfj-hqw5-84h5](https://github.com/sekacorn/PrivateAIStack/security/advisories/GHSA-mhfj-hqw5-84h5): URL settings accepted credentials that could reach INFO logs | `privateaistack <= 0.2.0b2` | `0.2.0b3` |
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ---
 
