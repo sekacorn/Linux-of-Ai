@@ -15,9 +15,10 @@ did for `embeddings`. No vector is added and the vector count stays at twelve.
 
 Recorded for the build: D1 additive states and optional report sections,
 rubric stays 2; D2 new level `verified (memory export)`, whose CLAUDE.md row
-the owner adds; D3 Letta `.af` import-only, droppable; D4 the `mcp` SDK as an
+the owner adds; D3 Letta `.af` **dropped, revisit later** (the format is
+retired upstream; section 6 keeps the evaluation); D4 the `mcp` SDK as an
 optional extra `agentforge-oss[mcp]` (`mcp>=2.3,<3`), approved as a new
-dependency subject to the checkpoint 9 gate; D5 namespaced audit event types;
+dependency subject to the SDK gate in checkpoint 8; D5 namespaced audit event types;
 D6 the hash covers all five definition fields plus server identity; D7 record
 the dimension and refuse a mismatch.
 
@@ -27,7 +28,7 @@ the dimension and refuse a mismatch.
 |---|---|---|---|
 | D1 | How the suite reports the two new evidence states | (a) additive: new manifest states plus optional `memory_stores` / `tool_inventory` report sections in `exit-report.v2`, emitted only when used, rubric stays 2; (b) `exit-report.v3`, rubric 3 | **(a)**. Same compatibility pattern as the 0.2.0b2 inventory markers: a report that does not use the new states validates against 0.2.0b2's schema. The ladders for every existing state are unchanged. Rubric 3 is the alternative if you consider any new ladder a rubric change. |
 | D2 | Verification level for a memory export the scanner fully re-read | reuse `verified (local evidence)`; add `verified (memory export)` | **Add `verified (memory export)`** and its row in CLAUDE.md (your edit). Reusing the embeddings level would blur what was checked. |
-| D3 | Letta Agent File adapter | import-only; import and export; none | **Import-only, last checkpoint of 4a, and droppable.** Letta itself now marks `.af` legacy (see section 6). |
+| D3 | Letta Agent File adapter | import-only; import and export; none | **Dropped; revisit later.** Recommended import-only and droppable; the owner dropped it. Letta itself marks `.af` legacy (see section 6). |
 | D4 | MCP implementation | (A) official SDK as an optional extra `agentforge-oss[mcp]`; (B) in-house client on `httpx`; (C) defer | **(A), pending your approval of the dependency** (section 9). OAuth discovery and `iss` validation are security-critical and better not hand-rolled. Core install unchanged. |
 | D5 | Audit events for rug pulls and memory review | namespaced custom types now (`agentforge.mcp.*`, `agentforge.memory.*`); new core types in AIAuditLog | **Namespaced now**: AIAuditLog already accepts them, no release needed. Core types can follow in a later AIAuditLog release. |
 | D6 | Definition hash coverage | name, description and input schema only; also output schema and annotations | **All five**, plus the server identity. Annotations and the output schema also change what a model is told. |
@@ -172,7 +173,7 @@ class PortableMemory(Protocol):
 - Storage changes are additive migrations: `CREATE TABLE IF NOT EXISTS` for tombstones, review state and provenance, and a `forge_memory_meta` row recording scheme, revision and dimension. On open, a store whose recorded dimension differs from the configured one is **refused** (fixes D7); a pre-existing store without the row has it written from its first vector's length.
 - Module functions `forge.memory.portable.export_memory(...)` / `import_memory(...)` and CLI `forge memory export | import | review | list-quarantine`.
 - `search()` keeps its signature and **excludes quarantined items**. Existing data is unaffected because nothing in it is quarantined.
-- Release: **agentforge-oss 0.5.8**. Dependents' `<0.6.0` pins keep working. **No breaking change is needed**, so no 0.6.0 chain.
+- Release: **agentforge-oss 0.5.9** (0.5.8 went to the dimension-mismatch bug fix). Dependents' `<0.6.0` pins keep working. **No breaking change is needed**, so no 0.6.0 chain.
 
 ## 4. Privacy and deletion
 
@@ -200,7 +201,11 @@ Imported memory is **untrusted by default**.
 - **Provenance per item**, kept in its own column, never in user metadata: source system and store, export ID, export SHA-256, original item ID, import time and importer version. Import refuses items whose metadata contains reserved `_forge_*` keys, so a document cannot forge provenance.
 - **Never promoted into system prompts.** No Forge code path reads memory into a prompt today. The rule becomes a test: retrieved memory is only ever rendered as quoted, labeled context in a non-system message, and a test asserts no `Role.SYSTEM` message is built from memory text.
 
-## 6. Letta Agent File (`.af`)
+## 6. Letta Agent File (`.af`): dropped, revisit later
+
+**Status: dropped from Phase 4 (owner decision, D3); revisit later.** No
+adapter is built. The evaluation below is kept so a later revisit starts from
+it, and should be re-checked then, since the upstream format was being retired.
 
 Sources: the agent-file and letta repositories and Letta's docs (read
 2026-11-25). **License: Apache-2.0** for both repositories, so compatible.
@@ -223,11 +228,10 @@ Material facts:
 
 The other direction, Forge to `.af`, would lose retrieval memory entirely (no
 passages in `.af`), every vector, all provenance and tombstones.
-**Recommendation:** an import-only adapter (`forge memory import --from-letta-af`)
-that parses with the standard library (no `letta` dependency), refuses files
-over 16 MiB, routes everything through quarantine, and prints the loss table
-above for every import. Given the format is retired upstream, it is the last
-checkpoint of 4a and can be dropped without affecting anything else.
+**What a revisit would build** (not scheduled): an import-only adapter that
+parses with the standard library (no `letta` dependency), refuses files over
+16 MiB, routes everything through quarantine, and prints the loss table above
+for every import.
 
 ## 7. Suite: the memory vector
 
@@ -295,7 +299,7 @@ from the `httpx` Forge already uses), pywin32 on Windows, and an exactly pinned
 | B. in-house client on `httpx` | No new dependency | We own OAuth and `iss` logic: the riskiest code to hand-write |
 | C. defer 4b | Nothing new | No progress on the vector |
 
-**Recommendation: A**, with a gate at checkpoint 4b-1: confirm `mcp` 2.3.0
+**Recommendation: A**, with a gate at checkpoint 8: confirm `mcp` 2.3.0
 implements the 2026-07-28 revision (`server/discover`, no session handshake)
 before writing anything on it. If it does not, stop and report.
 
@@ -335,7 +339,7 @@ New state `tool_inventory`, accepted only on `tool_connectors`, referencing
 
 ```json
 {"schema_version": "tool-inventory.v1",
- "generated_by": {"tool": "agentforge-oss", "version": "0.5.9"},
+ "generated_by": {"tool": "agentforge-oss", "version": "0.5.10"},
  "tools": [{"tool_id": "files_search", "name": "search", "server_id": "files",
             "transport": "mcp_streamable_http", "server_origin": "http://127.0.0.1:8765",
             "definition_sha256": "...", "portability": "mcp",
@@ -362,30 +366,36 @@ New state `tool_inventory`, accepted only on `tool_connectors`, referencing
 
 Readers before writers, each published and verified from PyPI before the next.
 
+Two bug-fix releases landed during 4a and took version numbers this table
+first reserved: **agentforge-oss 0.5.8** (memory search refuses a dimension
+mismatch; pgvector DSN examples) and **privateaistack 0.2.0b4** (knowledge
+search refuses a dimension mismatch). The numbers below are the current plan.
+
 | Release | Contents |
 |---|---|
 | **4a** ai-infrastructure-suite 0.2.0b3 | `agent-memory.v1` and `agent-memory-import.v1` schemas and readers; `memory_inventory` state; `memory_stores` section; level `verified (memory export)` |
-| **4a** agentforge-oss 0.5.8 | `PortableMemory`, migrations, dimension guard, export/import/review CLI, quarantine, Letta import (if kept) |
-| **4a** privateaistack 0.2.0b4 | `agent-memory.v1` writer for its chunk store (the old `export_jsonl` kept, marked superseded) |
+| **4a** agentforge-oss 0.5.9 | `PortableMemory`, additive migrations and `forge memory migrate`, dimension guard, export/import/quarantine/review CLI, credential refusal with audited redact/exclude |
+| **4a** privateaistack 0.2.0b5 | `agent-memory.v1` writer for its chunk store (the old `export_jsonl` kept, marked superseded) |
 | **4b** ai-infrastructure-suite 0.2.0b4 | `tool-inventory.v1` and `tool-approvals.v1` schemas and readers; `tool_inventory` state |
 | **4b** agentpolicypack 0.2.0b2 | `mcp_governance` example bundle and tests (docs-only release; skippable if you prefer no release) |
-| **4b** agentforge-oss 0.5.9 | `[mcp]` extra, connector, server, approvals, rug-pull defense, `forge tools inventory`, `forge mcp approve` |
+| **4b** agentforge-oss 0.5.10 | `[mcp]` extra, connector, server, approvals, rug-pull defense, `forge tools inventory`, `forge mcp approve` |
 
 No floors move: the suite already requires `agentforge-oss>=0.5.6`, and none
 of these releases is a security fix.
 
-**Checkpoints (one PR each):**
-1. Suite: `agent-memory.v1` schema, fixtures, bounded reader. No scoring.
-2. Suite: `memory_inventory` scoring, report section, level; then release 0.2.0b3.
-3. AgentForge: `PortableMemory` on the three backends, migrations, dimension guard (fixes the known issue and the `strict=False` comparison).
-4. AgentForge: export/import, tombstones, quarantine and review, CLI, `suite-contract` variants; then release 0.5.8.
-5. AgentForge: Letta `.af` import adapter (droppable).
-6. PrivateAIStack: `agent-memory.v1` writer; then release 0.2.0b4.
-7. Suite: `tool-inventory.v1` and `tool-approvals.v1` readers and `tool_inventory` scoring; then release 0.2.0b4.
-8. AgentPolicyPack: `mcp_governance` bundle and tests.
-9. AgentForge: SDK gate (does `mcp` 2.3.0 implement 2026-07-28?), `[mcp]` extra, connector over fake servers, approvals and hashing.
-10. AgentForge: server side, `ToolConnector` adapter, `forge tools inventory`; then release 0.5.9.
-11. Umbrella: the restore demo restores memory (export, import, review) and tools (approved inventory) at every hop.
+**Checkpoints (one PR each).** Renumbered after the Letta adapter was dropped.
+1. Suite: `agent-memory.v1` schema, fixtures, bounded reader. No scoring. (**done**, AI-Infrastructure-Suite#24)
+2. Suite: `memory_inventory` scoring, report section, level; then release 0.2.0b3. (**done**, #25; release pending)
+3. AgentForge: `PortableMemory` on the three backends, additive migrations and `forge memory migrate`, dimension guard. (**done**, AgentForge#26)
+4. AgentForge: export/import, tombstones, quarantine and review, CLI, credential refusal with redact/exclude, `suite-contract` variants; then release 0.5.9. (AgentForge#27)
+5. PrivateAIStack: `agent-memory.v1` writer; then release 0.2.0b5.
+6. Suite: `tool-inventory.v1` and `tool-approvals.v1` readers and `tool_inventory` scoring; then release 0.2.0b4.
+7. AgentPolicyPack: `mcp_governance` bundle and tests.
+8. AgentForge: SDK gate (does `mcp` 2.3.0 implement 2026-07-28?), `[mcp]` extra, connector over fake servers, approvals and hashing.
+9. AgentForge: server side, `ToolConnector` adapter, `forge tools inventory`; then release 0.5.10.
+10. Umbrella: the restore demo restores memory (export, import, review) and tools (approved inventory) at every hop.
+
+Dropped, revisit later: the Letta `.af` import adapter (section 6).
 
 ## 13. Fakes and negative tests
 
