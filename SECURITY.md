@@ -20,11 +20,10 @@ The published advisories are listed in the [README](README.md#security).
 ## Reporting a vulnerability
 
 Report a vulnerability in a package to that project, as its security policy
-describes. For this repository's demos or documentation, use **Report a
-vulnerability** on the [Security tab](https://github.com/sekacorn/Linux-of-Ai/security)
-when it is available. If it is not, open an issue titled "Security contact
-request" that contains **no details**, and the maintainer will arrange a
-private channel.
+describes. For this repository's demos or documentation, report it privately with **Report a vulnerability** on the repository's
+[Security tab](https://github.com/sekacorn/Linux-of-Ai/security) (direct link: [github.com/sekacorn/Linux-of-Ai/security/advisories/new](https://github.com/sekacorn/Linux-of-Ai/security/advisories/new)).
+This is GitHub's private vulnerability reporting: the report stays private between you and the
+maintainers until an advisory is published.
 
 Please do not report a suspected vulnerability in a public issue, and never
 include real credentials or private data.
