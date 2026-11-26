@@ -279,8 +279,8 @@ Level `verified (memory export)` (D2) when the scanner re-read everything;
 ## 9. Design: MCP-first
 
 - **`forge.tools.mcp.McpConnector`** connects to one server (Streamable HTTP or stdio), calls `server/discover` and `tools/list`, and wraps each remote tool as an `McpTool(Tool)`. Every `McpTool` is `dangerous=True` and gated by approval (section 10).
-- **`forge.tools.mcp.serve`** exposes a `ToolRegistry` as an MCP server, so the built-in tools are reachable through MCP too.
-- **`ToolConnector` adapter protocol** for proprietary connectors: `describe()` and `call()`, mounted behind an in-process MCP server. Every external tool then passes the same definition hashing and approval, whatever it wraps.
+- **`forge.tools.mcp.serve`** exposes a `ToolRegistry` as an MCP server, so the built-in tools are reachable through MCP too, under the owner's exposure rules in section 10.
+- **`ToolConnector` adapter protocol** for proprietary connectors: `describe()` and `call()`, mounted behind an in-process MCP server. Every external tool then passes the same definition hashing and approval, whatever it wraps. **The adapter records the backend it wraps**; a vendor-only backend scores as vendor-only (section 11, "Wrapped backends").
 - **Spec target 2026-07-28**: no sessions (protocol version and capabilities ride in each request's `_meta`), `server/discover` required, change notices through `subscriptions/listen`. A `toolsListChanged` notice triggers re-hashing, never auto-acceptance.
 - **Not built**: roots, sampling and logging (deprecated); the HTTP+SSE transport (deprecated); the tasks extension. Elicitation is not used initially.
 - **Authorization**: RFC 9728 Protected Resource Metadata for discovery; RFC 8707 `resource` on every authorization and token request; RFC 9207 `iss` checked by exact string comparison before redeeming a code; Client ID Metadata Documents, not dynamic client registration. Tokens come from the environment or a secret store, never config, logs, events or exports.
@@ -327,6 +327,29 @@ before writing anything on it. If it does not, stop and report.
 is never contacted. A tool not in the approval file is never offered to a
 model.
 
+**Exposing Forge's tools as an MCP server (`forge.tools.mcp.serve`).** Owner
+rules, set 2026-11-26 before any of it was built. They are acceptance criteria
+for checkpoint 9b:
+- **Off by default.** Nothing listens until an operator configures and starts
+  the server.
+- **stdio or loopback only**, unless a non-loopback bind is configured
+  explicitly.
+- **HTTP requires authorization.** A Streamable HTTP endpoint without it
+  refuses to start, whatever the bind address.
+- **Default-deny per tool.** Nothing is exposed unless it is listed by name.
+  There is no "expose all".
+- **Dangerous tools are never exposed by default.** That covers `http_get`,
+  sandboxed execution and anything `dangerous=True`. Exposing one needs a
+  separate, explicit opt-in for that tool by name; listing it is not enough.
+- **Every inbound call is audited**, including refused ones: caller, tool,
+  outcome and the time it took. Arguments are recorded with credentials and
+  PII redacted and within a size bound. Results are recorded by SHA-256 and
+  length only, never their content.
+- **Caller input is untrusted.** Arguments are validated against the tool's
+  schema and bounded, and they pass the same sanitizer and sandbox as any
+  model-requested call. Errors returned to the caller follow the 0.5.6 rule:
+  the exception class only, never internal text.
+
 **AgentPolicyPack rule.**
 - Forge builds requests with action `mcp.server.connect` (resource type `McpServer`, with server ID, origin and derived hosting) and `tool.call`, where `tool.namespace` = `mcp.<server_id>` and `tool.definition_sha256` is set.
 - An example bundle `examples/mcp_governance/` with embedded tests (deny by default, allow listed servers, deny one tool, require review for hosted servers) ships in AgentPolicyPack. No code change there.
@@ -358,6 +381,77 @@ New state `tool_inventory`, accepted only on `tool_connectors`, referencing
 | 75 | `vendor_only` with `reconstruction: documented`. |
 | 100 | `vendor_only` with no reconstruction, or no inventory. |
 
+**Built (suite checkpoint, AI-Infrastructure-Suite#27).** As above, with the
+level `verified (tool inventory)`, a `tools` report section, and a
+`stale_approvals` count. The suite now owns the canonical schemas for
+`tool-approvals.v1`, `mcp-servers.v1` and `tool-definition.v1`, and
+AgentForge's `suite-contract` job validates against them.
+
+### Wrapped backends (owner rule, 2026-11-26)
+
+**A tool behind an MCP adapter must record what it wraps.** If the underlying
+backend is vendor-only, the tool scores as vendor-only: 75 with a documented
+reconstruction path, 100 without. **It never scores 25, whatever the MCP
+wrapper.** Wrapping a proprietary API in MCP makes it callable through an open
+protocol, but it does not make the capability portable: leaving the vendor
+still means rebuilding what is behind the wrapper.
+
+**Can `tool-inventory.v1` express this today? No.**
+- An adapter-mounted tool is an MCP tool: it has a server, a transport and a
+  definition hash, and it is approved like any other. So a writer declares it
+  `portability: mcp`, and with an approved hash on a local (in-process) server
+  it **scores 25**. Nothing records the backend.
+- The only way to get the right score today is to declare the tool
+  `portability: vendor_only`. That requires `transport: in_process` and
+  `definition_sha256: null`, which throws away the hash, the approval binding
+  and the backend's name.
+- Either way, the format cannot say "this MCP tool wraps a vendor-only
+  backend", and nothing stops a writer from omitting the fact.
+
+**Decision (owner, 2026-11-26): Option A, widened to every tool.** `backend`
+is **required on every tool** in `tool-inventory.v1` (it may be `null`). This
+is additive with respect to every released reader and writer, because
+`tool-inventory.v1` had not been published when it was added (before suite
+0.2.0b4).
+
+```json
+{"tool_id": "crm__lookup", "name": "lookup", "server_id": "crm",
+ "transport": "mcp_streamable_http", "server_origin": "https://mcp.crm.example.com",
+ "definition_sha256": "...", "portability": "mcp", "reconstruction": null,
+ "backend": {"system": "crm-vendor-api", "portability": "vendor_only",
+             "reconstruction": "documented"}}
+```
+
+- **`backend: null`** means the tool is self-contained: its function depends
+  on no external service.
+- **A tool whose function depends on an external service names it**:
+  `{system, portability, reconstruction}`. That includes adapter-mounted
+  tools, and third-party MCP servers that wrap a vendor API.
+  - `system` is an identifier for the service, never a URL, credential or
+    account identifier.
+  - `portability` is `vendor_only` or `mcp`. `mcp` means the service is
+    itself a portable MCP implementation.
+  - `reconstruction` is `documented` or `none` for a vendor-only service, and
+    `null` for an `mcp` one.
+- **Scoring.** A vendor-only backend scores **75** (documented) or **100**
+  (none) **regardless of MCP, approval or hosting**. When a `vendor_only`
+  tool also has a vendor-only backend, the worse reconstruction governs. A
+  tool whose backend is `null` or `mcp` scores by its own fields, as before.
+  The report keeps the approval and hosting columns, and the reason names
+  the backend.
+- **Always attested.** The scanner cannot see behind a tool, so every
+  inventory's `attested_claims` includes "that each tool's declared backend
+  is accurate". A `null` backend is a claim, not a fact.
+- **Writer rule (AgentForge).** The `ToolConnector` adapter has no default
+  backend: every connector declares one, and `forge tools inventory` writes
+  it. Tests prove that an adapter-mounted tool is never written with
+  `backend: null`, and that a vendor-only backend scores 75 or 100 even when
+  approved and local.
+
+The options considered were A (required and nullable, chosen), B (optional,
+rejected because omission would silently score 25), and C (a v2 later,
+rejected as a second version before the first was released).
+
 ---
 
 # For both
@@ -385,14 +479,16 @@ of these releases is a security fix.
 
 **Checkpoints (one PR each).** Renumbered after the Letta adapter was dropped.
 1. Suite: `agent-memory.v1` schema, fixtures, bounded reader. No scoring. (**done**, AI-Infrastructure-Suite#24)
-2. Suite: `memory_inventory` scoring, report section, level; then release 0.2.0b3. (**done**, #25; release pending)
+2. Suite: `memory_inventory` scoring, report section, level; then release 0.2.0b3. (**done**, #25; **released** 0.2.0b3)
 3. AgentForge: `PortableMemory` on the three backends, additive migrations and `forge memory migrate`, dimension guard. (**done**, AgentForge#26)
-4. AgentForge: export/import, tombstones, quarantine and review, CLI, credential refusal with redact/exclude, `suite-contract` variants; then release 0.5.9. (AgentForge#27)
-5. PrivateAIStack: `agent-memory.v1` writer; then release 0.2.0b5.
-6. Suite: `tool-inventory.v1` and `tool-approvals.v1` readers and `tool_inventory` scoring; then release 0.2.0b4.
+4. AgentForge: export/import, tombstones, quarantine and review, CLI, credential refusal with redact/exclude, `suite-contract` variants; then release 0.5.9. (**done**, AgentForge#27; **released** 0.5.9)
+5. PrivateAIStack: `agent-memory.v1` writer; then release 0.2.0b5. (**done**, PrivateAIStack#31; **released** 0.2.0b5. **4a complete.**)
+6. Suite: `tool-inventory.v1` and `tool-approvals.v1` readers and `tool_inventory` scoring, plus canonical `mcp-servers.v1` and `tool-definition.v1` schemas; then release 0.2.0b4. (**done**, AI-Infrastructure-Suite#27, with AgentForge's contract tests in AgentForge#33; release pending.) **6b:** the required `backend` field on every tool (section 11, "Wrapped backends"; owner-approved), before 0.2.0b4 ships.
 7. AgentPolicyPack: `mcp_governance` bundle and tests.
-8. AgentForge: SDK gate (does `mcp` 2.3.0 implement 2026-07-28?), `[mcp]` extra, connector over fake servers, approvals and hashing.
-9. AgentForge: server side, `ToolConnector` adapter, `forge tools inventory`; then release 0.5.10.
+8. AgentForge: SDK gate (does `mcp` 2.3.0 implement 2026-07-28?), `[mcp]` extra, connector over fake servers, approvals and hashing. (**done**: the SDK gate passed; AgentForge#29 made duplicate tool registration explicit; AgentForge#30.)
+9. AgentForge, in two parts:
+   - **9a**, approval workflow: `forge mcp status` and `forge mcp approve`, with definition diffs and no blind approvals; `mcp-servers.v1` and `tool-definition.v1`. (**done**, AgentForge#31.)
+   - **9b**, server side (under the exposure rules in section 10); the `ToolConnector` adapter (recording its backend); and `forge tools inventory` (writing `backend`). Then release 0.5.10.
 10. Umbrella: the restore demo restores memory (export, import, review) and tools (approved inventory) at every hop.
 
 Dropped, revisit later: the Letta `.af` import adapter (section 6).
@@ -439,6 +535,19 @@ mismatched dimension.
 - re-export of imported items keeps provenance;
 - the round trip leaves bytes unchanged;
 - the score is never 0, and 25 needs a digest-bound import report.
+
+**Negative tests, server side (checkpoint 9b):**
+- the server exposes nothing by default, and nothing that is not listed;
+- a dangerous tool (`http_get`, sandboxed execution) is not exposed by being
+  listed, only with its explicit opt-in;
+- a Streamable HTTP server without authorization refuses to start;
+- a non-loopback bind without explicit configuration is refused;
+- every inbound call is audited, including refused ones;
+- oversized, schema-violating or injection-bearing arguments are refused or
+  flagged exactly as model-requested calls are;
+- an internal error reaches the caller as its exception class only;
+- an adapter-mounted tool cannot be inventoried without a backend;
+- a vendor-only backend scores 75 or 100 even when approved and local.
 
 **Negative tests, tools:**
 - unknown server never contacted; unknown tool never offered;
